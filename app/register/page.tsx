@@ -20,7 +20,6 @@ export default function RegisterPage() {
     phone: '',
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,22 +29,49 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
-      await auth.register(formData);
-      setSuccess('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-      setTimeout(() => {
-        router.push('/login?registered=true');
-      }, 2000);
+      const data = {
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        password2: formData.password2,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        phone: formData.phone.trim(),
+      };
+
+      console.log('📤 Envoi des données:', data);
+
+      const response = await auth.register(data);
+      console.log('✅ Inscription réussie:', response.data);
+
+      router.push('/login?registered=true');
     } catch (err: any) {
+      console.error('❌ Erreur complète:', err);
+      console.error('❌ Réponse du serveur:', err.response?.data);
+
       const data = err.response?.data;
-      if (data?.password) setError(data.password[0]);
-      else if (data?.username) setError(data.username[0]);
-      else if (data?.email) setError(data.email[0]);
-      else if (data?.password2) setError(data.password2[0]);
-      else setError('Erreur lors de l\'inscription. Veuillez réessayer.');
+      if (data) {
+        if (typeof data === 'string') {
+          setError(data);
+        } else if (data.password) {
+          setError(data.password[0]);
+        } else if (data.username) {
+          setError(data.username[0]);
+        } else if (data.email) {
+          setError(data.email[0]);
+        } else if (data.phone) {
+          setError(data.phone[0]);
+        } else if (data.non_field_errors) {
+          setError(data.non_field_errors[0]);
+        } else {
+          setError('Erreur lors de l\'inscription. Veuillez réessayer.');
+        }
+      } else {
+        setError('Erreur de connexion au serveur.');
+      }
     } finally {
       setLoading(false);
     }
@@ -56,7 +82,7 @@ export default function RegisterPage() {
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Image src="/digicol.png" alt="DigiCol" width={160} height={50} className="h-auto" />
+            <Image src="/logo.png" alt="DigiCol" width={160} height={50} className="h-auto" />
           </div>
           <p className="text-gray-500">Créer votre compte DigiCol</p>
         </div>
@@ -64,12 +90,6 @@ export default function RegisterPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">
             {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4 text-sm">
-            {success}
           </div>
         )}
 

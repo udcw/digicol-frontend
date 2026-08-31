@@ -20,44 +20,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Intercepteur pour rafraîchir le token (CORRIGÉ)
+// Intercepteur pour rafraîchir le token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // Éviter les boucles infinies
-    if (originalRequest._retry) {
-      return Promise.reject(error);
-    }
-    
-    // Vérifier si c'est une erreur 401
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
       const refresh = localStorage.getItem('refresh_token');
       if (refresh) {
         try {
-          const response = await axios.post(`${API_URL}/auth/refresh/`, { refresh });
-          
-          if (response.data.access) {
-            localStorage.setItem('access_token', response.data.access);
-            originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-            return api(originalRequest);
-          }
-        } catch (refreshError) {
-          // Refresh token invalide - déconnexion
+          const response = await api.post('/auth/refresh/', { refresh });
+          localStorage.setItem('access_token', response.data.access);
+          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
+          return api(originalRequest);
+        } catch (e) {
           localStorage.clear();
           window.location.href = '/login';
-          return Promise.reject(refreshError);
         }
-      } else {
-        // Pas de refresh token - déconnexion
-        localStorage.clear();
-        window.location.href = '/login';
       }
     }
-    
     return Promise.reject(error);
   }
 );
@@ -66,7 +48,10 @@ api.interceptors.response.use(
 export const auth = {
   login: (username: string, password: string) =>
     api.post('/auth/login/', { username, password }),
-  register: (data: any) => api.post('/auth/register/', data),
+  register: (data: any) => {
+    console.log('📤 Envoi inscription:', data);
+    return api.post('/auth/register/', data);
+  },
   profile: () => api.get('/auth/profile/'),
   logout: () => {
     localStorage.clear();
@@ -90,22 +75,23 @@ export const projects = {
   list: () => api.get('/projects/'),
   detail: (id: number) => api.get(`/projects/${id}/`),
 };
+
 export const events = {
   list: () => api.get('/events/'),
   detail: (id: number) => api.get(`/events/${id}/`),
 };
-// lib/api.ts
 
 export const blog = {
   list: () => api.get('/blog/'),
   detail: (id: number) => api.get(`/blog/${id}/`),
 };
-// lib/api.ts
+
+export const opportunities = {
+  list: () => api.get('/opportunities/'),
+  detail: (id: number) => api.get(`/opportunities/${id}/`),
+};
 
 export const certificates = {
   list: () => api.get('/certificates/'),
   detail: (id: number) => api.get(`/certificates/${id}/`),
-};
-export const opportunities = {
-  list: () => api.get('/opportunities/'),
 };
