@@ -48,7 +48,6 @@ export default function ClientLayout({
     window.location.href = '/';
   };
 
-  // ⭐ LIENS DE NAVIGATION ⭐
   const navItems = [
     { href: '/', label: 'Accueil', icon: HomeIcon },
     { href: '/courses', label: 'Formations', icon: BookOpenIcon },
@@ -63,7 +62,6 @@ export default function ClientLayout({
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          {/* Ligne 1: Logo et menu mobile */}
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
               <Image
@@ -76,7 +74,7 @@ export default function ClientLayout({
               />
             </Link>
 
-            {/* Menu desktop */}
+            {/* MENU DESKTOP */}
             <nav className="hidden md:flex items-center gap-6 text-sm">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -127,21 +125,17 @@ export default function ClientLayout({
               )}
             </nav>
 
-            {/* Menu mobile - hamburger */}
+            {/* BOUTON HAMBURGER */}
             <button 
               onClick={toggleMenu} 
               className="md:hidden text-gray-600 hover:text-blue-600 focus:outline-none p-2"
               aria-label="Menu"
             >
-              {isMenuOpen ? (
-                <XMarkIcon className="h-6 w-6" />
-              ) : (
-                <Bars3Icon className="h-6 w-6" />
-              )}
+              {isMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
             </button>
           </div>
 
-          {/* Menu mobile déroulant */}
+          {/* MENU MOBILE */}
           <div className={`md:hidden bg-white transition-all duration-300 overflow-hidden ${
             isMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
           }`}>

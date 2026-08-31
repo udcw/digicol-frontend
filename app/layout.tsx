@@ -1,4 +1,4 @@
-// app/layout.tsx - Server Component (sans 'use client')
+// app/layout.tsx
 
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
