@@ -90,7 +90,22 @@ export const projects = {
   list: () => api.get('/projects/'),
   detail: (id: number) => api.get(`/projects/${id}/`),
 };
+export const events = {
+  list: () => api.get('/events/'),
+  detail: (id: number) => api.get(`/events/${id}/`),
+};
+// lib/api.ts
 
+export const blog = {
+  list: () => api.get('/blog/'),
+  detail: (id: number) => api.get(`/blog/${id}/`),
+};
+// lib/api.ts
+
+export const certificates = {
+  list: () => api.get('/certificates/'),
+  detail: (id: number) => api.get(`/certificates/${id}/`),
+};
 export const opportunities = {
   list: () => api.get('/opportunities/'),
 };

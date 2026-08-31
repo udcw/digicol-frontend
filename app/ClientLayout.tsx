@@ -11,6 +11,7 @@ import {
   BookOpenIcon,
   RocketLaunchIcon,
   CalendarIcon,
+  DocumentTextIcon,
   NewspaperIcon,
   BriefcaseIcon,
 } from '@heroicons/react/24/outline';
@@ -47,31 +48,70 @@ export default function ClientLayout({
           </Link>
           
           {/* Menu desktop */}
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="/courses" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition font-medium">
-              <BookOpenIcon className="h-4 w-4" />
-              Formations
-            </Link>
-            <Link href="/projects" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition font-medium">
-              <RocketLaunchIcon className="h-4 w-4" />
-              Projets
-            </Link>
-            <Link href="/events" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition font-medium">
-              <CalendarIcon className="h-4 w-4" />
-              Événements
-            </Link>
-            <Link href="/blog" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition font-medium">
-              <NewspaperIcon className="h-4 w-4" />
-              Blog
-            </Link>
-            <Link href="/opportunities" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition font-medium">
-              <BriefcaseIcon className="h-4 w-4" />
-              Opportunités
-            </Link>
-            <Link href="/login" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
-              Connexion
-            </Link>
-          </nav>
+        {/* Menu mobile déroulant */}
+<div className={`md:hidden bg-white border-b border-gray-200 transition-all duration-300 overflow-hidden ${
+  isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+}`}>
+  <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
+    <Link 
+      href="/courses" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <BookOpenIcon className="h-5 w-5 text-blue-600" />
+      Formations
+    </Link>
+    <Link 
+      href="/projects" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <RocketLaunchIcon className="h-5 w-5 text-blue-600" />
+      Projets
+    </Link>
+    <Link 
+      href="/events" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <CalendarIcon className="h-5 w-5 text-blue-600" />
+      Événements
+    </Link>
+    <Link 
+      href="/blog" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <NewspaperIcon className="h-5 w-5 text-blue-600" />
+      Blog
+    </Link>
+    <Link 
+      href="/opportunities" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <BriefcaseIcon className="h-5 w-5 text-blue-600" />
+      Opportunités
+    </Link>
+    <Link 
+      href="/certificates" 
+      className="flex items-center gap-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition font-medium py-2.5 px-3 rounded-lg"
+      onClick={closeMenu}
+    >
+      <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+      Certificats
+    </Link>
+    <div className="border-t border-gray-200 my-2 pt-2">
+      <Link 
+        href="/login" 
+        className="bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition text-center block font-medium"
+        onClick={closeMenu}
+      >
+        Se connecter
+      </Link>
+    </div>
+  </nav>
+</div>
 
           {/* Menu mobile - hamburger */}
           <button 
