@@ -1,4 +1,4 @@
-// app/page.tsx - Avec Heroicons
+// app/page.tsx
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,7 +24,14 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <div className="mb-8">
-              <Image src="/digicol.png" alt="DigiCol" width={220} height={80} className="h-auto" priority />
+              <Image
+                src="/logo.png"
+                alt="DigiCol"
+                width={220}
+                height={80}
+                className="h-auto w-auto"
+                priority
+              />
             </div>
 
             <div className="inline-block bg-blue-500/20 text-blue-300 px-4 py-1 rounded-full text-sm font-medium mb-6 border border-blue-500/30">
@@ -46,10 +53,16 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-lg shadow-blue-600/30">
+              <Link
+                href="/register"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-lg shadow-blue-600/30"
+              >
                 Rejoindre DigiCol
               </Link>
-              <Link href="/courses" className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium border border-white/20 transition">
+              <Link
+                href="/courses"
+                className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-lg font-medium border border-white/20 transition"
+              >
                 Découvrir les programmes
               </Link>
             </div>
@@ -62,7 +75,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <div className="flex justify-center mb-6">
-              <Image src="/digicol.png" alt="DigiCol" width={150} height={50} className="h-auto" />
+              <Image src="/logo.png" alt="DigiCol" width={150} height={50} className="h-auto w-auto" />
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
               Pourquoi DigiCol ?
@@ -129,7 +142,10 @@ export default function Home() {
           <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
             Rejoignez DigiCol et commencez votre parcours vers les métiers du numérique.
           </p>
-          <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg font-medium inline-block transition shadow-lg shadow-blue-600/30">
+          <Link
+            href="/register"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg font-medium inline-block transition shadow-lg shadow-blue-600/30"
+          >
             Créer mon compte
           </Link>
         </div>
@@ -140,7 +156,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <Image src="/digicol.png" alt="DigiCol" width={140} height={45} className="h-auto mb-4" />
+              <Image src="/logo.png" alt="DigiCol" width={140} height={45} className="h-auto w-auto mb-4" />
               <p className="text-sm text-gray-500">Apprendre · Partager · Innover</p>
             </div>
             <div>

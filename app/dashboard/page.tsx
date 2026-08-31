@@ -1,17 +1,15 @@
-// app/dashboard/page.tsx - Dashboard avec Heroicons
+// app/dashboard/page.tsx - Dashboard sans double logo
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { 
   BookOpenIcon, 
   RocketLaunchIcon, 
   DocumentTextIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { auth, members } from '@/lib/api';
 
@@ -58,25 +56,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2 md:gap-3">
-            <Image src="/digicol.png" alt="DigiCol" width={100} height={35} className="h-auto md:w-[120px]" />
-          </Link>
-          <div className="flex items-center gap-3 md:gap-6">
-            <span className="text-xs md:text-sm text-gray-600 hidden sm:block">
-              {member?.full_name || user?.username}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-xs md:text-sm text-gray-600 hover:text-red-600 transition"
-            >
-              <ArrowRightOnRectangleIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Déconnexion</span>
-            </button>
-          </div>
-        </div>
-      </header>
 
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-6 md:mb-8">

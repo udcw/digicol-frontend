@@ -1,4 +1,4 @@
-// lib/api.ts
+// lib/api.ts - Version corrigée
 
 import axios from 'axios';
 
@@ -20,26 +20,44 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Intercepteur pour rafraîchir le token
+// Intercepteur pour rafraîchir le token - VERSION CORRIGÉE
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Éviter les boucles infinies
+    if (originalRequest._retry) {
+      return Promise.reject(error);
+    }
+    
+    // Vérifier si c'est une erreur 401
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      
       const refresh = localStorage.getItem('refresh_token');
       if (refresh) {
         try {
-          const response = await api.post('/auth/refresh/', { refresh });
-          localStorage.setItem('access_token', response.data.access);
-          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-          return api(originalRequest);
-        } catch (e) {
+          const response = await axios.post(`${API_URL}/auth/refresh/`, { refresh });
+          
+          if (response.data.access) {
+            localStorage.setItem('access_token', response.data.access);
+            originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          // Refresh token invalide - déconnexion
           localStorage.clear();
           window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
+      } else {
+        // Pas de refresh token - déconnexion
+        localStorage.clear();
+        window.location.href = '/login';
       }
     }
+    
     return Promise.reject(error);
   }
 );
@@ -48,10 +66,7 @@ api.interceptors.response.use(
 export const auth = {
   login: (username: string, password: string) =>
     api.post('/auth/login/', { username, password }),
-  register: (data: any) => {
-    console.log('📤 Envoi inscription:', data);
-    return api.post('/auth/register/', data);
-  },
+  register: (data: any) => api.post('/auth/register/', data),
   profile: () => api.get('/auth/profile/'),
   logout: () => {
     localStorage.clear();
