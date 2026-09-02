@@ -16,10 +16,7 @@ interface Member {
   city: string;
   domain: string;
   is_active_member: boolean;
-  user: {
-    email: string;
-    username: string;
-  };
+  user: { email: string; username: string } | null;
 }
 
 export default function AdminMembersPage() {
@@ -29,14 +26,21 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('user_role');
-    if (!token || (role !== 'SUPER_ADMIN' && role !== 'ADMIN')) {
+    checkAuth();
+    fetchMembers();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       router.push('/admin/login');
       return;
     }
-    fetchMembers();
-  }, [router]);
+    const role = session.user?.user_metadata?.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      router.push('/admin/login');
+    }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -49,15 +53,26 @@ export default function AdminMembersPage() {
           city,
           domain,
           is_active_member,
-          user:user_id (
-            email,
-            username
-          )
+          user:user_id (email, username)
         `)
         .order('id', { ascending: false });
 
       if (error) throw error;
-      setMembers(data || []);
+
+      // Formater les données
+      const formattedData: Member[] = (data || []).map((item: any) => ({
+        id: item.id,
+        full_name: item.full_name,
+        phone: item.phone,
+        city: item.city,
+        domain: item.domain,
+        is_active_member: item.is_active_member,
+        user: item.user && Array.isArray(item.user) && item.user.length > 0
+          ? { email: item.user[0].email, username: item.user[0].username }
+          : null
+      }));
+
+      setMembers(formattedData);
     } catch (error) {
       console.error('Erreur lors du chargement des membres:', error);
     } finally {
@@ -95,14 +110,11 @@ export default function AdminMembersPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <UsersIcon className="h-6 w-6 text-blue-600" />
-          </div>
+          <div className="p-2 bg-blue-50 rounded-lg"><UsersIcon className="h-6 w-6 text-blue-600" /></div>
           <h1 className="text-2xl font-bold text-slate-800">Gestion des membres</h1>
           <span className="text-sm text-gray-500 ml-2">({filteredMembers.length})</span>
         </div>
 
-        {/* Recherche */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
@@ -112,63 +124,55 @@ export default function AdminMembersPage() {
                 placeholder="Rechercher un membre..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <button
-              onClick={fetchMembers}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition"
-            >
+            <button onClick={fetchMembers} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
               Actualiser
             </button>
           </div>
         </div>
 
-        {/* Liste */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">ID</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Nom</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Email</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Ville</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Domaine</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMembers.length === 0 ? (
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">ID</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">Nom</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">Email</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">Ville</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">Domaine</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">Statut</th>
+                  <td colSpan={6} className="text-center text-gray-500 py-12">
+                    <UsersIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <p>Aucun membre trouvé</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center text-gray-500 py-12">
-                      <UsersIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                      <p>Aucun membre trouvé</p>
+              ) : (
+                filteredMembers.map((member) => (
+                  <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-6 py-3 text-sm text-gray-500">{member.id}</td>
+                    <td className="px-6 py-3 text-sm font-medium text-slate-800">{member.full_name}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{member.user?.email || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{member.city || '-'}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{member.domain || '-'}</td>
+                    <td className="px-6 py-3">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        member.is_active_member ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {member.is_active_member ? 'Actif' : 'Inactif'}
+                      </span>
                     </td>
                   </tr>
-                ) : (
-                  filteredMembers.map((member) => (
-                    <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-6 py-3 text-sm text-gray-500">{member.id}</td>
-                      <td className="px-6 py-3 text-sm font-medium text-slate-800">{member.full_name}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{member.user?.email || '-'}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{member.city || '-'}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{member.domain || '-'}</td>
-                      <td className="px-6 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          member.is_active_member
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {member.is_active_member ? 'Actif' : 'Inactif'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>
