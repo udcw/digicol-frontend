@@ -96,6 +96,18 @@ export const events = {
   detail: (id: number) => api.get(`/events/${id}/`),
 };
 
+export const isAdmin = (): boolean => {
+  const role = localStorage.getItem('user_role');
+  return role === 'SUPER_ADMIN' || role === 'ADMIN';
+};
+
+export const getAccessToken = (): string | null => {
+  return localStorage.getItem('access_token');
+};
+
+export const redirectToAdminLogin = () => {
+  window.location.href = '/admin/login';
+};
 export const blog = {
   list: () => api.get('/blog/'),
   detail: (id: number) => api.get(`/blog/${id}/`),

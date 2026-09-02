@@ -18,6 +18,7 @@ import {
   UserCircleIcon,
   HomeIcon,
   ArrowRightOnRectangleIcon,
+  ShieldCheckIcon,  // ⭐ AJOUTÉ
 } from '@heroicons/react/24/outline';
 
 export default function ClientLayout({
@@ -27,11 +28,14 @@ export default function ClientLayout({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
+    const role = localStorage.getItem('user_role');
     setIsLoggedIn(!!token);
+    setUserRole(role);
   }, [pathname]);
 
   const toggleMenu = () => {
@@ -45,6 +49,7 @@ export default function ClientLayout({
   const handleLogout = () => {
     localStorage.clear();
     setIsLoggedIn(false);
+    setUserRole(null);
     window.location.href = '/';
   };
 
@@ -57,6 +62,8 @@ export default function ClientLayout({
     { href: '/opportunities', label: 'Opportunités', icon: BriefcaseIcon },
     { href: '/certificates', label: 'Certificats', icon: DocumentTextIcon },
   ];
+
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
 
   return (
     <>
@@ -93,6 +100,21 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
+              
+              {/* Lien Admin (visible uniquement pour les admins) */}
+              {isLoggedIn && isAdmin && (
+                <Link
+                  href="/admin/dashboard"
+                  className={`flex items-center gap-1.5 transition font-medium ${
+                    pathname.startsWith('/admin')
+                      ? 'text-blue-600'
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
+                  <ShieldCheckIcon className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
               
               {isLoggedIn ? (
                 <>
@@ -137,7 +159,7 @@ export default function ClientLayout({
 
           {/* MENU MOBILE */}
           <div className={`md:hidden bg-white transition-all duration-300 overflow-hidden ${
-            isMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+            isMenuOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
             <nav className="py-4 flex flex-col gap-2 border-t border-gray-100 mt-3">
               {navItems.map((item) => {
@@ -158,6 +180,22 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
+              
+              {/* Admin en mobile */}
+              {isLoggedIn && isAdmin && (
+                <Link
+                  href="/admin/dashboard"
+                  className={`flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg ${
+                    pathname.startsWith('/admin')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                  }`}
+                  onClick={closeMenu}
+                >
+                  <ShieldCheckIcon className="h-5 w-5" />
+                  Admin
+                </Link>
+              )}
               
               {isLoggedIn ? (
                 <>
