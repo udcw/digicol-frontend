@@ -1,5 +1,3 @@
-// app/admin/login/page.tsx
-
 'use client';
 
 import { useState } from 'react';
@@ -22,14 +20,12 @@ export default function AdminLoginPage() {
     try {
       const response = await auth.login(username, password);
       const user = response.data;
-      
-      const role = user.role || localStorage.getItem('user_role') || 'SUPER_ADMIN';
+      const role = user.role || 'SUPER_ADMIN';
       
       if (role === 'SUPER_ADMIN' || role === 'ADMIN' || user.is_superuser) {
         localStorage.setItem('access_token', response.data.access);
         localStorage.setItem('refresh_token', response.data.refresh);
         localStorage.setItem('user_role', 'SUPER_ADMIN');
-        localStorage.setItem('user_name', user.username);
         router.push('/admin/dashboard');
       } else {
         setError('Accès réservé aux administrateurs.');
@@ -45,10 +41,8 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex justify-center">
-            <Image src="/logo.png" alt="DigiCol" width={160} height={50} className="h-auto" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800 mt-4">Administration</h1>
+          <Image src="/logo.png" alt="DigiCol" width={160} height={50} className="mx-auto h-auto" />
+          <h1 className="text-2xl font-bold text-slate-800 mt-4">Administration DigiCol</h1>
           <p className="text-gray-500 text-sm">Accès réservé aux administrateurs</p>
         </div>
 

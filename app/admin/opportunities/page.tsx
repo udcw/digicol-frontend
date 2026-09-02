@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeftIcon, DocumentTextIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, BriefcaseIcon, PlusIcon } from '@heroicons/react/24/outline';
 
-export default function AdminCertificatesPage() {
+export default function AdminOpportunitiesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
@@ -40,11 +40,11 @@ export default function AdminCertificatesPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg"><DocumentTextIcon className="h-6 w-6 text-blue-600" /></div>
-            <h1 className="text-2xl font-bold text-slate-800">Gestion des certificats</h1>
+            <div className="p-2 bg-blue-50 rounded-lg"><BriefcaseIcon className="h-6 w-6 text-blue-600" /></div>
+            <h1 className="text-2xl font-bold text-slate-800">Gestion des opportunités</h1>
           </div>
           <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-            <PlusIcon className="h-4 w-4" /> Nouveau certificat
+            <PlusIcon className="h-4 w-4" /> Nouvelle opportunité
           </button>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -52,16 +52,16 @@ export default function AdminCertificatesPage() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">ID</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Certificat</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Membre</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Date</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Titre</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Type</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-6 py-3">Entreprise</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td colSpan={4} className="text-center text-gray-500 py-12">
-                  <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p>Aucun certificat</p>
+                  <BriefcaseIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                  <p>Aucune opportunité</p>
                 </td>
               </tr>
             </tbody>
