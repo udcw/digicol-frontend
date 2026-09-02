@@ -42,15 +42,15 @@ export default function RegisterPage() {
         phone: formData.phone.trim(),
       };
 
-      console.log('📤 Envoi des données:', data);
+      console.log(' Envoi des données:', data);
 
       const response = await auth.register(data);
-      console.log('✅ Inscription réussie:', response.data);
+      console.log(' Inscription réussie:', response.data);
 
       router.push('/login?registered=true');
     } catch (err: any) {
-      console.error('❌ Erreur complète:', err);
-      console.error('❌ Réponse du serveur:', err.response?.data);
+      console.error(' Erreur complète:', err);
+      console.error(' Réponse du serveur:', err.response?.data);
 
       const data = err.response?.data;
       if (data) {
