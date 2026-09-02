@@ -1,17 +1,17 @@
-// app/dashboard/page.tsx - Dashboard sans double logo
+// app/dashboard/page.tsx
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 import { 
   BookOpenIcon, 
   RocketLaunchIcon, 
   DocumentTextIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
-import { auth, members } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,47 +20,61 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       router.push('/login');
       return;
     }
+    setUser(session.user);
+    
+    // Récupérer le membre
+    const { data } = await supabase
+      .from('members_member')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+    
+    setMember(data);
+    setLoading(false);
+  };
 
-    Promise.all([auth.profile(), members.profile()])
-      .then(([userRes, memberRes]) => {
-        setUser(userRes.data);
-        setMember(memberRes.data);
-      })
-      .catch(() => {
-        localStorage.clear();
-        router.push('/login');
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
-
-  const handleLogout = () => {
-    auth.logout();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push('/');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Chargement...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-blue-600">DigiCol</h1>
+          <div className="flex items-center gap-6">
+            <span className="text-sm text-gray-600 hidden sm:block">
+              {member?.full_name || user?.user_metadata?.username || user?.email}
+            </span>
+            <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-700 transition">
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="mb-6 md:mb-8">
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">
-            Bonjour, {member?.full_name || user?.username}
+            Bonjour, {member?.full_name || user?.user_metadata?.username || 'Utilisateur'}
           </h1>
           <p className="text-sm md:text-base text-gray-500">Bienvenue sur votre espace DigiCol</p>
         </div>
@@ -69,7 +83,7 @@ export default function DashboardPage() {
           <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs md:text-sm text-gray-500 font-medium">Identifiant</p>
             <p className="text-base md:text-xl font-bold text-slate-900 mt-1 break-all">
-              {user?.digicol_id || 'N/A'}
+              {user?.user_metadata?.digicol_id || 'N/A'}
             </p>
           </div>
           <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">

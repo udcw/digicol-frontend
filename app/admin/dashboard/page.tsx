@@ -29,78 +29,81 @@ export default function AdminDashboardPage() {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('user_role');
-    if (!token || (role !== 'SUPER_ADMIN' && role !== 'ADMIN')) {
+    checkAuth();
+    fetchStats();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       router.push('/admin/login');
       return;
     }
-    fetchStats();
-  }, [router]);
+    const role = session.user?.user_metadata?.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      router.push('/admin/login');
+    }
+    setLoading(false);
+  };
 
   const fetchStats = async () => {
     try {
       // Compter les membres
-      const { count: membersCount } = await supabase
+      const { count: members } = await supabase
         .from('members_member')
         .select('*', { count: 'exact', head: true });
       
       // Compter les formations
-      const { count: coursesCount } = await supabase
+      const { count: courses } = await supabase
         .from('courses_course')
         .select('*', { count: 'exact', head: true });
       
       // Compter les projets
-      const { count: projectsCount } = await supabase
+      const { count: projects } = await supabase
         .from('projects_project')
         .select('*', { count: 'exact', head: true });
       
       // Compter les certificats
-      const { count: certificatesCount } = await supabase
+      const { count: certificates } = await supabase
         .from('certificates_certificate')
         .select('*', { count: 'exact', head: true });
       
       // Compter les utilisateurs
-      const { count: usersCount } = await supabase
+      const { count: users } = await supabase
         .from('accounts_user')
         .select('*', { count: 'exact', head: true });
 
       setStats({
-        members: membersCount || 0,
-        courses: coursesCount || 0,
-        projects: projectsCount || 0,
-        certificates: certificatesCount || 0,
-        users: usersCount || 0,
+        members: members || 0,
+        courses: courses || 0,
+        projects: projects || 0,
+        certificates: certificates || 0,
+        users: users || 0,
       });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push('/admin/login');
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Chargement...</p>
-        </div>
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   const statItems = [
-    { label: 'Utilisateurs', value: stats.users, icon: UsersIcon, color: 'blue' },
-    { label: 'Membres', value: stats.members, icon: UsersIcon, color: 'green' },
-    { label: 'Formations', value: stats.courses, icon: BookOpenIcon, color: 'purple' },
-    { label: 'Projets', value: stats.projects, icon: RocketLaunchIcon, color: 'orange' },
-    { label: 'Certificats', value: stats.certificates, icon: DocumentTextIcon, color: 'red' },
+    { label: 'Utilisateurs', value: stats.users, icon: UsersIcon },
+    { label: 'Membres', value: stats.members, icon: UsersIcon },
+    { label: 'Formations', value: stats.courses, icon: BookOpenIcon },
+    { label: 'Projets', value: stats.projects, icon: RocketLaunchIcon },
+    { label: 'Certificats', value: stats.certificates, icon: DocumentTextIcon },
   ];
 
   const menuItems = [
@@ -120,23 +123,15 @@ export default function AdminDashboardPage() {
             <Image src="/logo.png" alt="DigiCol" width={120} height={40} className="h-auto" />
             <span className="text-sm text-gray-400 hidden sm:inline">| Administration</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 hidden sm:inline">Admin</span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition"
-            >
-              <ArrowRightOnRectangleIcon className="h-4 w-4" />
-              Déconnexion
-            </button>
-          </div>
+          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700">
+            <ArrowRightOnRectangleIcon className="h-4 w-4" /> Déconnexion
+          </button>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-slate-800 mb-8">Tableau de bord</h1>
 
-        {/* Statistiques */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           {statItems.map((stat, index) => {
             const Icon = stat.icon;
@@ -154,7 +149,6 @@ export default function AdminDashboardPage() {
           })}
         </div>
 
-        {/* Menu Admin */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
@@ -162,10 +156,10 @@ export default function AdminDashboardPage() {
               <Link
                 key={index}
                 href={item.href}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition hover:border-blue-300 group"
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-300 group"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition">
+                  <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100">
                     <Icon className="h-5 w-5 text-blue-600" />
                   </div>
                   <h2 className="text-lg font-bold text-slate-800">{item.label}</h2>
