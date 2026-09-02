@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 import { 
   UsersIcon,
   BookOpenIcon,
@@ -13,36 +14,73 @@ import {
   DocumentTextIcon,
   NewspaperIcon,
   BriefcaseIcon,
-  ShieldCheckIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
-import { auth } from '@/lib/api';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    members: 0,
+    courses: 0,
+    projects: 0,
+    certificates: 0,
+    users: 0,
+  });
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const role = localStorage.getItem('user_role');
-    
     if (!token || (role !== 'SUPER_ADMIN' && role !== 'ADMIN')) {
       router.push('/admin/login');
       return;
     }
-
-    auth.profile()
-      .then((res) => setUser(res.data))
-      .catch(() => {
-        localStorage.clear();
-        router.push('/admin/login');
-      })
-      .finally(() => setLoading(false));
+    fetchStats();
   }, [router]);
 
+  const fetchStats = async () => {
+    try {
+      // Compter les membres
+      const { count: membersCount } = await supabase
+        .from('members_member')
+        .select('*', { count: 'exact', head: true });
+      
+      // Compter les formations
+      const { count: coursesCount } = await supabase
+        .from('courses_course')
+        .select('*', { count: 'exact', head: true });
+      
+      // Compter les projets
+      const { count: projectsCount } = await supabase
+        .from('projects_project')
+        .select('*', { count: 'exact', head: true });
+      
+      // Compter les certificats
+      const { count: certificatesCount } = await supabase
+        .from('certificates_certificate')
+        .select('*', { count: 'exact', head: true });
+      
+      // Compter les utilisateurs
+      const { count: usersCount } = await supabase
+        .from('accounts_user')
+        .select('*', { count: 'exact', head: true });
+
+      setStats({
+        members: membersCount || 0,
+        courses: coursesCount || 0,
+        projects: projectsCount || 0,
+        certificates: certificatesCount || 0,
+        users: usersCount || 0,
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = () => {
-    auth.logout();
+    localStorage.clear();
     router.push('/admin/login');
   };
 
@@ -57,18 +95,25 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const statItems = [
+    { label: 'Utilisateurs', value: stats.users, icon: UsersIcon, color: 'blue' },
+    { label: 'Membres', value: stats.members, icon: UsersIcon, color: 'green' },
+    { label: 'Formations', value: stats.courses, icon: BookOpenIcon, color: 'purple' },
+    { label: 'Projets', value: stats.projects, icon: RocketLaunchIcon, color: 'orange' },
+    { label: 'Certificats', value: stats.certificates, icon: DocumentTextIcon, color: 'red' },
+  ];
+
   const menuItems = [
-    { href: '/admin/members', label: 'Membres', icon: UsersIcon, desc: 'Gérer les membres' },
-    { href: '/admin/courses', label: 'Formations', icon: BookOpenIcon, desc: 'Gérer les formations' },
-    { href: '/admin/projects', label: 'Projets', icon: RocketLaunchIcon, desc: 'Gérer les projets' },
-    { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon, desc: 'Gérer les articles' },
-    { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon, desc: 'Gérer les certificats' },
-    { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, desc: 'Gérer les offres' },
+    { href: '/admin/members', label: 'Membres', icon: UsersIcon },
+    { href: '/admin/courses', label: 'Formations', icon: BookOpenIcon },
+    { href: '/admin/projects', label: 'Projets', icon: RocketLaunchIcon },
+    { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon },
+    { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon },
+    { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon },
   ];
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
@@ -76,7 +121,7 @@ export default function AdminDashboardPage() {
             <span className="text-sm text-gray-400 hidden sm:inline">| Administration</span>
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 hidden sm:inline">{user?.username}</span>
+            <span className="text-sm text-gray-600 hidden sm:inline">Admin</span>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition"
@@ -88,10 +133,28 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* Main */}
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-slate-800 mb-8">Tableau de bord</h1>
 
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {statItems.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Icon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-slate-800">{stat.value}</span>
+                </div>
+                <p className="text-sm text-gray-500">{stat.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Menu Admin */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
@@ -107,7 +170,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <h2 className="text-lg font-bold text-slate-800">{item.label}</h2>
                 </div>
-                <p className="text-sm text-gray-500">{item.desc}</p>
+                <p className="text-sm text-gray-500">Gérer les {item.label.toLowerCase()}</p>
               </Link>
             );
           })}
