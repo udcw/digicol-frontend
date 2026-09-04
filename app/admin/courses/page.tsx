@@ -79,9 +79,10 @@ export default function AdminCoursesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const userData = await supabase.auth.getUser();
       const data = {
         ...formData,
-        instructor_id: (await supabase.auth.getUser()).data.user?.id,
+        instructor_id: userData.data.user?.id,
       };
       
       if (editingId) {
@@ -145,6 +146,57 @@ export default function AdminCoursesPage() {
       category_id: null,
       is_published: false,
     });
+  };
+
+  // Fonction pour formater l'aperçu du programme - CORRIGEE pour accepter null
+  const renderProgramPreview = (program: string | null) => {
+    if (!program) return null;
+    
+    // Remplacer les \n textuels par de vrais sauts de ligne
+    const cleanProgram = program.replace(/\\n/g, '\n');
+    const lines = cleanProgram.split('\n').filter(line => line.trim() !== '');
+    
+    if (lines.length === 0) return null;
+    
+    // Limiter à 3 lignes pour l'aperçu
+    const previewLines = lines.slice(0, 3);
+    
+    return previewLines.map((line, index) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('-')) {
+        return (
+          <div key={index} className="flex items-start gap-1 text-xs text-gray-600">
+            <span className="text-blue-500">•</span>
+            <span>{trimmedLine.substring(1).trim().slice(0, 30)}</span>
+          </div>
+        );
+      }
+      if (trimmedLine.toLowerCase().startsWith('module')) {
+        return (
+          <div key={index} className="font-medium text-xs text-slate-700">
+            {trimmedLine}
+          </div>
+        );
+      }
+      return (
+        <div key={index} className="text-xs text-gray-500">
+          {trimmedLine.slice(0, 30)}
+        </div>
+      );
+    });
+  };
+
+  // Fonction pour compter les modules et sous-points - CORRIGEE pour accepter null
+  const getProgramStats = (program: string | null) => {
+    if (!program) return { modules: 0, items: 0 };
+    
+    const cleanProgram = program.replace(/\\n/g, '\n');
+    const lines = cleanProgram.split('\n').filter(line => line.trim() !== '');
+    
+    const modules = lines.filter(line => line.trim().toLowerCase().startsWith('module')).length;
+    const items = lines.filter(line => line.trim().startsWith('-')).length;
+    
+    return { modules, items };
   };
 
   if (loading) {
@@ -269,9 +321,12 @@ export default function AdminCoursesPage() {
                   value={formData.program}
                   onChange={(e) => setFormData({ ...formData, program: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Module 1: Introduction\nModule 2: Concepts avancés"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  placeholder="Module 1: Introduction&#10;- Syntaxe et variables&#10;- Structures de donnees&#10;&#10;Module 2: Concepts avances"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Utilisez des sauts de ligne (Entrée) et des tirets (-) pour les sous-points
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Prérequis</label>
@@ -330,24 +385,25 @@ export default function AdminCoursesPage() {
           </div>
         )}
 
-        {/* Liste */}
+        {/* Liste des formations avec aperçu du programme */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Titre</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Catégorie</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Niveau</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Prix</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Statut</th>
-                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Actions</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Titre</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Catégorie</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Niveau</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Prix</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Programme</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Statut</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {courses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center text-gray-500 py-12">
+                    <td colSpan={7} className="text-center text-gray-500 py-12">
                       <BookOpenIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
                       <p>Aucune formation</p>
                       <button
@@ -359,38 +415,53 @@ export default function AdminCoursesPage() {
                     </td>
                   </tr>
                 ) : (
-                  courses.map((course) => (
-                    <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-800">{course.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{course.category?.name || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{getLevelLabel(course.level)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full ${course.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {course.is_published ? 'Publié' : 'Brouillon'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/courses/${course.slug}`} target="_blank" className="text-gray-500 hover:text-gray-700 p-1">
-                            <EyeIcon className="h-4 w-4" />
-                          </Link>
-                          <button
-                            onClick={() => handleEdit(course)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(course.id)}
-                            className="text-red-600 hover:text-red-800 p-1"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  courses.map((course) => {
+                    const stats = getProgramStats(course.program);
+                    return (
+                      <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-slate-800">{course.title}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{course.category?.name || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{getLevelLabel(course.level)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>
+                        <td className="px-4 py-3">
+                          <div className="max-w-[200px]">
+                            <div className="max-h-[60px] overflow-y-auto text-xs">
+                              {course.program ? renderProgramPreview(course.program) : <span className="text-gray-400">Aucun programme</span>}
+                            </div>
+                            {course.program && stats.modules > 0 && (
+                              <div className="text-[10px] text-gray-400 mt-1">
+                                {stats.modules} module{stats.modules > 1 ? 's' : ''} • {stats.items} point{stats.items > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full ${course.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {course.is_published ? 'Publié' : 'Brouillon'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/courses/${course.slug}`} target="_blank" className="text-gray-500 hover:text-gray-700 p-1">
+                              <EyeIcon className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleEdit(course)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(course.id)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -399,4 +470,4 @@ export default function AdminCoursesPage() {
       </main>
     </div>
   );
-} 
+}

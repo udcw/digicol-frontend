@@ -680,3 +680,81 @@ export const createTransaction = async (walletId: number, amount: number, type: 
   return { data, error };
 };
 
+export const getMemberBadges = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('member_badges')
+    .select('badges(*)')
+    .eq('member_id', userId);
+  return { data, error };
+};
+
+export const awardBadge = async (userId: string, badgeSlug: string) => {
+  // Récupérer le badge
+  const { data: badge } = await supabase
+    .from('badges')
+    .select('id')
+    .eq('slug', badgeSlug)
+    .single();
+
+  if (!badge) return { error: new Error('Badge not found') };
+
+  const { data, error } = await supabase
+    .from('member_badges')
+    .insert({ member_id: userId, badge_id: badge.id })
+    .select()
+    .single();
+
+  return { data, error };
+};
+
+// ============================================
+// CERTIFICATS
+// ============================================
+
+export const generateCertificateNumber = () => {
+  const year = new Date().getFullYear();
+  const random = Math.floor(10000 + Math.random() * 90000);
+  return `CERT-DIGICOL-${year}-${random}`;
+};
+
+export const createCertificate = async (
+  memberId: string,
+  courseId: number,
+  title: string
+) => {
+  const certificateNumber = generateCertificateNumber();
+  
+  const { data, error } = await supabase
+    .from('certificates')
+    .insert({
+      certificate_number: certificateNumber,
+      member_id: memberId,
+      course_id: courseId,
+      title: title,
+      is_verified: true,
+    })
+    .select()
+    .single();
+
+  return { data, error };
+};
+
+export const getCertificate = async (certificateNumber: string) => {
+  const { data, error } = await supabase
+    .from('certificates')
+    .select('*, member:users(*), course:courses(*)')
+    .eq('certificate_number', certificateNumber)
+    .single();
+  return { data, error };
+};
+
+export const verifyCertificate = async (certificateNumber: string) => {
+  const { data, error } = await supabase
+    .from('certificates')
+    .select('is_verified')
+    .eq('certificate_number', certificateNumber)
+    .single();
+  
+  if (error) return { isValid: false, error };
+  return { isValid: data?.is_verified === true, error: null };
+};

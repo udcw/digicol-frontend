@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { projects } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 interface Project {
   id: number;
@@ -31,10 +31,19 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await projects.list();
-      setProjectsList(response.data.results || response.data || []);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur chargement des projets:', error);
+        return;
+      }
+
+      setProjectsList(data || []);
     } catch (error) {
-      console.error('Erreur chargement des projets:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -44,8 +53,8 @@ export default function ProjectsPage() {
     const statusMap: Record<string, string> = {
       'DRAFT': 'Brouillon',
       'IN_PROGRESS': 'En cours',
-      'COMPLETED': 'Terminé',
-      'ARCHIVED': 'Archivé',
+      'COMPLETED': 'Termine',
+      'ARCHIVED': 'Archive',
     };
     return statusMap[status] || status;
   };
@@ -78,13 +87,11 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-6 md:py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Projets DigiCol</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1">Découvrez les projets réalisés par la communauté</p>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Decouvrez les projets realises par la communaute</p>
         </div>
 
-        {/* Filtres */}
         <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto pb-2 md:pb-0 mb-6 md:mb-8 scrollbar-hide">
           <button
             onClick={() => setFilter('all')}
@@ -114,7 +121,7 @@ export default function ProjectsPage() {
                 : 'bg-white text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Terminés
+            Termines
           </button>
           <button
             onClick={() => setFilter('DRAFT')}
@@ -128,7 +135,6 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* Liste des projets */}
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl">
             <p className="text-gray-500">Aucun projet disponible pour le moment.</p>
@@ -140,21 +146,21 @@ export default function ProjectsPage() {
                 key={project.id}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition"
               >
-               {project.image ? (
-  <div className="h-40 md:h-48 bg-gray-200 relative">
-    <Image
-      src={project.image.startsWith('http') ? project.image : `http://127.0.0.1:8000${project.image}`}
-      alt={project.title}
-      fill
-      className="object-cover"
-      unoptimized={project.image.startsWith('http')} // Pour les URLs externes
-    />
-  </div>
-) : (
-  <div className="h-40 md:h-48 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-    <span className="text-white text-3xl md:text-4xl font-bold">DigiCol</span>
-  </div>
-)}
+                {project.image ? (
+                  <div className="h-40 md:h-48 bg-gray-200 relative">
+                    <Image
+                      src={project.image.startsWith('http') ? project.image : `${project.image}`}
+                      alt={project.title}
+                      fill
+                      className="object-cover"
+                      unoptimized={project.image.startsWith('http')}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-40 md:h-48 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                    <span className="text-white text-3xl md:text-4xl font-bold">DigiCol</span>
+                  </div>
+                )}
                 <div className="p-4 md:p-6">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
@@ -196,7 +202,7 @@ export default function ProjectsPage() {
                         rel="noopener noreferrer"
                         className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded transition"
                       >
-                        Démo
+                        Demo
                       </a>
                     )}
                   </div>

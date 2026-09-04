@@ -1,124 +1,263 @@
-// lib/api.ts - Version corrigée
+// lib/api.ts - Version Supabase
 
-import axios from 'axios';
+import { supabase } from './supabase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
-
-export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Intercepteur pour ajouter le token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Intercepteur pour rafraîchir le token - VERSION CORRIGÉE
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Éviter les boucles infinies
-    if (originalRequest._retry) {
-      return Promise.reject(error);
-    }
-    
-    // Vérifier si c'est une erreur 401
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      const refresh = localStorage.getItem('refresh_token');
-      if (refresh) {
-        try {
-          const response = await axios.post(`${API_URL}/auth/refresh/`, { refresh });
-          
-          if (response.data.access) {
-            localStorage.setItem('access_token', response.data.access);
-            originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-            return api(originalRequest);
-          }
-        } catch (refreshError) {
-          // Refresh token invalide - déconnexion
-          localStorage.clear();
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // Pas de refresh token - déconnexion
-        localStorage.clear();
-        window.location.href = '/login';
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
-
-// Fonctions API
+// ============================================
+// AUTHENTIFICATION (via Supabase)
+// ============================================
 export const auth = {
-  login: (username: string, password: string) =>
-    api.post('/auth/login/', { username, password }),
-  register: (data: any) => api.post('/auth/register/', data),
-  profile: () => api.get('/auth/profile/'),
-  logout: () => {
-    localStorage.clear();
-    window.location.href = '/';
+  login: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  },
+  
+  register: async (email: string, password: string, metadata?: any) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+      },
+    });
+    return { data, error };
+  },
+  
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+  },
+  
+  profile: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      return { data, error };
+    }
+    return { data: null, error: new Error('Non connecté') };
   },
 };
 
-export const members = {
-  profile: () => api.get('/members/profile/'),
-  update: (data: any) => api.put('/members/profile/', data),
-  verify: (id: string) => api.get(`/members/verify/${id}/`),
-};
-
+// ============================================
+// COURSES
+// ============================================
 export const courses = {
-  list: () => api.get('/courses/'),
-  detail: (id: number) => api.get(`/courses/${id}/`),
-  categories: () => api.get('/courses/categories/'),
+  list: async () => {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*, category:categories(*)')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (slug: string) => {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*, category:categories(*), instructor:users(*)')
+      .eq('slug', slug)
+      .eq('is_published', true)
+      .single();
+    return { data, error };
+  },
+  
+  categories: async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    return { data, error };
+  },
 };
 
+// ============================================
+// PROJECTS
+// ============================================
 export const projects = {
-  list: () => api.get('/projects/'),
-  detail: (id: number) => api.get(`/projects/${id}/`),
+  list: async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (id: number) => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return { data, error };
+  },
 };
 
+// ============================================
+// EVENTS
+// ============================================
 export const events = {
-  list: () => api.get('/events/'),
-  detail: (id: number) => api.get(`/events/${id}/`),
+  list: async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (id: number) => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return { data, error };
+  },
 };
 
-export const isAdmin = (): boolean => {
-  const role = localStorage.getItem('user_role');
+// ============================================
+// BLOG
+// ============================================
+export const blog = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (id: number) => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('id', id)
+      .eq('is_published', true)
+      .single();
+    return { data, error };
+  },
+};
+
+// ============================================
+// OPPORTUNITIES
+// ============================================
+export const opportunities = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('opportunities')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (id: number) => {
+    const { data, error } = await supabase
+      .from('opportunities')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return { data, error };
+  },
+};
+
+// ============================================
+// CERTIFICATES
+// ============================================
+export const certificates = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+  
+  detail: async (id: number) => {
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return { data, error };
+  },
+};
+
+// ============================================
+// MEMBERS
+// ============================================
+export const members = {
+  profile: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: new Error('Non connecté') };
+    }
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    return { data, error };
+  },
+  
+  update: async (data: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: new Error('Non connecté') };
+    }
+    const { data: updated, error } = await supabase
+      .from('users')
+      .update(data)
+      .eq('id', user.id)
+      .select()
+      .single();
+    return { data: updated, error };
+  },
+};
+
+// ============================================
+// UTILITAIRES
+// ============================================
+export const isAdmin = async (): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  
+  const { data } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  
+  const role = data?.role || 'MEMBRE';
   return role === 'SUPER_ADMIN' || role === 'ADMIN';
 };
 
 export const getAccessToken = (): string | null => {
-  return localStorage.getItem('access_token');
+  // Récupérer le token depuis Supabase
+  // Le token est géré automatiquement par Supabase
+  return null; // Supabase gère ça automatiquement
 };
 
 export const redirectToAdminLogin = () => {
   window.location.href = '/admin/login';
 };
-export const blog = {
-  list: () => api.get('/blog/'),
-  detail: (id: number) => api.get(`/blog/${id}/`),
-};
 
-export const opportunities = {
-  list: () => api.get('/opportunities/'),
-  detail: (id: number) => api.get(`/opportunities/${id}/`),
-};
-
-export const certificates = {
-  list: () => api.get('/certificates/'),
-  detail: (id: number) => api.get(`/certificates/${id}/`),
+// Exporter par défaut
+export default {
+  auth,
+  members,
+  courses,
+  projects,
+  events,
+  blog,
+  opportunities,
+  certificates,
+  isAdmin,
+  getAccessToken,
+  redirectToAdminLogin,
 };

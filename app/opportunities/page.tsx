@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { opportunities } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 interface Opportunity {
   id: number;
@@ -29,10 +29,19 @@ export default function OpportunitiesPage() {
 
   const fetchOpportunities = async () => {
     try {
-      const response = await opportunities.list();
-      setOpportunitiesList(response.data.results || response.data || []);
+      const { data, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .order('deadline', { ascending: true });
+
+      if (error) {
+        console.error('Erreur chargement des opportunites:', error);
+        return;
+      }
+
+      setOpportunitiesList(data || []);
     } catch (error) {
-      console.error('Erreur chargement des opportunités:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -79,7 +88,7 @@ export default function OpportunitiesPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Chargement des opportunités...</p>
+          <p className="text-gray-500 mt-4">Chargement des opportunites...</p>
         </div>
       </div>
     );
@@ -88,13 +97,11 @@ export default function OpportunitiesPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-6 md:py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Opportunités</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Opportunites</h1>
           <p className="text-sm md:text-base text-gray-500 mt-1">Stages, emplois et missions pour les talents</p>
         </div>
 
-        {/* Filtres */}
         <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto pb-2 md:pb-0 mb-6 md:mb-8 scrollbar-hide">
           <button
             onClick={() => setFilter('all')}
@@ -138,10 +145,9 @@ export default function OpportunitiesPage() {
           </button>
         </div>
 
-        {/* Liste */}
         {filteredOpportunities.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-500">Aucune opportunité disponible pour le moment.</p>
+            <p className="text-gray-500">Aucune opportunite disponible pour le moment.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:gap-6">
@@ -166,9 +172,9 @@ export default function OpportunitiesPage() {
                     <p className="text-sm text-gray-500 mb-2">{opportunity.company}</p>
                     <p className="text-sm text-gray-600 mb-2 line-clamp-2">{opportunity.description}</p>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                      <span>📍 {opportunity.location}</span>
+                      <span>Lieu: {opportunity.location}</span>
                       <span>•</span>
-                      <span>📅 {formatDate(opportunity.deadline)}</span>
+                      <span>Date limite: {formatDate(opportunity.deadline)}</span>
                     </div>
                   </div>
                   <Link

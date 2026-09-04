@@ -1,464 +1,311 @@
-// app/admin/courses/page.tsx
+// app/courses/[slug]/page.tsx
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { supabase, Course, Category } from '@/lib/supabase';
-import { 
-  ArrowLeftIcon, 
-  BookOpenIcon, 
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-} from '@heroicons/react/24/outline';
+import { supabase } from '@/lib/supabase';
 
-export default function AdminCoursesPage() {
+interface Course {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  level: string;
+  duration: string;
+  program: string;
+  prerequisites: string;
+  price: number;
+  available_seats: number;
+  is_published: boolean;
+  category_id: number;
+  instructor_id: string;
+  created_at: string;
+  category?: {
+    id: number;
+    name: string;
+  };
+  instructor?: {
+    id: string;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+}
+
+export default function CourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const router = useRouter();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    description: '',
-    level: 'DEBUTANT',
-    duration: '',
-    program: '',
-    prerequisites: '',
-    price: 0,
-    available_seats: 10,
-    category_id: null as number | null,
-    is_published: false,
-  });
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    checkAuth();
-    fetchData();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.push('/admin/login');
-      return;
+    if (slug) {
+      fetchCourse();
     }
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-    const role = userData?.role || 'MEMBRE';
-    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
-      router.push('/admin/login');
-    }
-  };
+  }, [slug]);
 
-  const fetchData = async () => {
-    console.log('🔄 === FETCH DATA START ===');
-    
+  const fetchCourse = async () => {
     try {
-      // 1. Récupérer les catégories
-      console.log('📥 1. Récupération des catégories...');
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesError) {
-        console.error('❌ Erreur catégories:', categoriesError);
-        throw categoriesError;
-      }
-
-      console.log(`✅ ${categoriesData?.length || 0} catégories chargées`);
-      setCategories(categoriesData || []);
-
-      // 2. Récupérer les cours avec la relation
-      console.log('📥 2. Récupération des cours...');
-      const { data: coursesData, error: coursesError } = await supabase
+      const { data, error } = await supabase
         .from('courses')
         .select(`
           *,
-          categories!fk_courses_category (*)
+          category:categories (
+            id,
+            name
+          ),
+          instructor:users (
+            id,
+            username,
+            full_name,
+            email
+          )
         `)
-        .order('created_at', { ascending: false });
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .single();
 
-      if (coursesError) {
-        console.error('❌ Erreur cours:', coursesError);
-        throw coursesError;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setError('Cette formation n\'existe pas ou n\'est pas encore publiee.');
+        } else {
+          setError('Erreur lors du chargement de la formation.');
+        }
+        return;
       }
 
-      console.log(`✅ ${coursesData?.length || 0} cours chargés`);
+      if (!data) {
+        setError('Formation non trouvee.');
+        return;
+      }
 
-      // Transformer les données
-      const transformedCourses = coursesData?.map((course: any) => ({
-        ...course,
-        category: course.categories || null
-      })) || [];
-
-      setCourses(transformedCourses);
-
+      setCourse(data);
     } catch (error: any) {
-      console.error('❌ ERREUR GENERALE:', error);
-      alert(`Erreur: ${error?.message || 'Erreur inconnue'}`);
+      console.error('Erreur:', error);
+      setError(error.message || 'Une erreur est survenue.');
     } finally {
-      console.log('🔄 === FETCH DATA END ===');
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('📝 === SUBMIT START ===');
-    console.log('📝 FormData:', formData);
-    
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const data = {
-        ...formData,
-        instructor_id: userData.user?.id,
-      };
-      
-      console.log('📝 Data à envoyer:', data);
-      
-      if (editingId) {
-        console.log('📝 Mise à jour du cours ID:', editingId);
-        const { error } = await supabase
-          .from('courses')
-          .update(data)
-          .eq('id', editingId);
-        
-        if (error) throw error;
-      } else {
-        console.log('📝 Création d\'un nouveau cours');
-        const { error } = await supabase
-          .from('courses')
-          .insert(data);
-        
-        if (error) throw error;
-      }
-      
-      console.log('✅ SUBMIT SUCCESS');
-      resetForm();
-      fetchData();
-    } catch (error: any) {
-      console.error('❌ SUBMIT ERROR:', error);
-      alert(`Erreur: ${error?.message || 'Erreur inconnue'}`);
-    }
-  };
-
-  const handleEdit = (course: Course) => {
-    console.log('✏️ Edition du cours:', course);
-    setEditingId(course.id);
-    setFormData({
-      title: course.title,
-      slug: course.slug,
-      description: course.description || '',
-      level: course.level,
-      duration: course.duration || '',
-      program: course.program || '',
-      prerequisites: course.prerequisites || '',
-      price: course.price,
-      available_seats: course.available_seats,
-      category_id: course.category_id,
-      is_published: course.is_published,
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Supprimer cette formation ?')) return;
-    try {
-      const { error } = await supabase.from('courses').delete().eq('id', id);
-      if (error) throw error;
-      fetchData();
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      alert(`Erreur: ${error?.message || 'Erreur inconnue'}`);
-    }
-  };
-
-  const resetForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData({
-      title: '',
-      slug: '',
-      description: '',
-      level: 'DEBUTANT',
-      duration: '',
-      program: '',
-      prerequisites: '',
-      price: 0,
-      available_seats: 10,
-      category_id: null,
-      is_published: false,
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   const getLevelLabel = (level: string) => {
     const levels: Record<string, string> = {
-      'DEBUTANT': 'Débutant',
+      'DEBUTANT': 'Debutant',
       'INTERMEDIAIRE': 'Intermédiaire',
-      'AVANCE': 'Avancé',
+      'AVANCE': 'Avance',
       'EXPERT': 'Expert',
     };
     return levels[level] || level;
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="DigiCol" width={120} height={40} className="h-auto" />
-            <span className="text-sm text-gray-400 hidden sm:inline">| Administration</span>
-          </Link>
-          <Link href="/admin/dashboard" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-blue-600">
-            <ArrowLeftIcon className="h-4 w-4" /> Retour
-          </Link>
-        </div>
-      </header>
+  const getLevelColor = (level: string) => {
+    const colors: Record<string, string> = {
+      'DEBUTANT': 'bg-green-100 text-green-700',
+      'INTERMEDIAIRE': 'bg-blue-100 text-blue-700',
+      'AVANCE': 'bg-orange-100 text-orange-700',
+      'EXPERT': 'bg-red-100 text-red-700',
+    };
+    return colors[level] || 'bg-gray-100 text-gray-700';
+  };
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg"><BookOpenIcon className="h-6 w-6 text-blue-600" /></div>
-            <h1 className="text-2xl font-bold text-slate-800">Gestion des formations</h1>
-            <span className="text-sm text-gray-500 ml-2">({courses.length})</span>
+  const getPriceText = (price: number) => {
+    if (price === 0) return 'Gratuit';
+    return `${price.toLocaleString()} FCFA`;
+  };
+
+  // Fonction pour afficher le programme avec des sauts de ligne
+  const renderProgram = (program: string) => {
+    if (!program) return null;
+    
+    // Remplacer les \n par des <br /> et traiter les tirets
+    const lines = program.split('\n').filter(line => line.trim() !== '');
+    
+    return lines.map((line, index) => {
+      const trimmedLine = line.trim();
+      // Si la ligne commence par un tiret, c'est un sous-point
+      if (trimmedLine.startsWith('-')) {
+        return (
+          <div key={index} className="flex items-start gap-2 ml-4 text-gray-600">
+            <span className="text-blue-500">•</span>
+            <span>{trimmedLine.substring(1).trim()}</span>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition"
+        );
+      }
+      // Si la ligne commence par "Module", c'est un titre
+      if (trimmedLine.toLowerCase().startsWith('module')) {
+        return (
+          <h3 key={index} className="text-lg font-semibold text-slate-800 mt-4 mb-2">
+            {trimmedLine}
+          </h3>
+        );
+      }
+      // Ligne normale
+      return (
+        <p key={index} className="text-gray-600 mb-1">
+          {trimmedLine}
+        </p>
+      );
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error || !course) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Formation non trouvee</h2>
+          <p className="text-gray-500 mb-6">{error || 'Le cours que vous recherchez n\'existe pas.'}</p>
+          <Link 
+            href="/courses" 
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
           >
-            <PlusIcon className="h-4 w-4" />
-            {showForm ? 'Annuler' : 'Nouvelle formation'}
-          </button>
+            Retour aux formations
+          </Link>
         </div>
+      </div>
+    );
+  }
 
-        {/* Formulaire */}
-        {showForm && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">
-              {editingId ? 'Modifier la formation' : 'Nouvelle formation'}
-            </h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                <select
-                  value={formData.category_id || ''}
-                  onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Sélectionner</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Niveau</label>
-                <select
-                  value={formData.level}
-                  onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="DEBUTANT">Débutant</option>
-                  <option value="INTERMEDIAIRE">Intermédiaire</option>
-                  <option value="AVANCE">Avancé</option>
-                  <option value="EXPERT">Expert</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Durée</label>
-                <input
-                  type="text"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="4 semaines"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Programme</label>
-                <textarea
-                  value={formData.program}
-                  onChange={(e) => setFormData({ ...formData, program: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Module 1: Introduction\nModule 2: Concepts avancés"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prérequis</label>
-                <textarea
-                  value={formData.prerequisites}
-                  onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prix (FCFA)</label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Places disponibles</label>
-                <input
-                  type="number"
-                  value={formData.available_seats}
-                  onChange={(e) => setFormData({ ...formData, available_seats: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_published}
-                    onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  Publié
-                </label>
-              </div>
-              <div className="md:col-span-2 flex gap-3">
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
-                >
-                  {editingId ? 'Mettre à jour' : 'Créer'}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg transition"
-                >
-                  Annuler
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        {/* Fil d'Ariane */}
+        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+          <Link href="/" className="hover:text-blue-600 transition">Accueil</Link>
+          <span>›</span>
+          <Link href="/courses" className="hover:text-blue-600 transition">Formations</Link>
+          <span>›</span>
+          <span className="text-slate-800 font-medium">{course.title}</span>
+        </nav>
 
-        {/* Liste */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Titre</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Catégorie</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Niveau</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Prix</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Statut</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {courses.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center text-gray-500 py-12">
-                      <BookOpenIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                      <p>Aucune formation</p>
-                      <button
-                        onClick={() => setShowForm(true)}
-                        className="text-blue-600 hover:underline mt-2"
-                      >
-                        Créer la première formation
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  courses.map((course) => (
-                    <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-800">{course.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {course.category?.name || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{getLevelLabel(course.level)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          course.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {course.is_published ? 'Publié' : 'Brouillon'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/courses/${course.slug}`} target="_blank" className="text-gray-500 hover:text-gray-700 p-1">
-                            <EyeIcon className="h-4 w-4" />
-                          </Link>
-                          <button
-                            onClick={() => handleEdit(course)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-          </button>
-                          <button
-                            onClick={() => handleDelete(course.id)}
-                            className="text-red-600 hover:text-red-800 p-1"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Contenu principal */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Bannière */}
+              <div className="h-56 bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center relative">
+                <div className="text-center text-white">
+                  <span className="text-4xl font-bold">DigiCol</span>
+                  <p className="text-sm opacity-80 mt-1">Formation en ligne</p>
+                </div>
+                <span className={`absolute top-4 right-4 text-sm px-3 py-1 rounded-full ${getLevelColor(course.level)}`}>
+                  {getLevelLabel(course.level)}
+                </span>
+              </div>
+
+              <div className="p-6">
+                <h1 className="text-3xl font-bold text-slate-800 mb-4">{course.title}</h1>
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                    {course.category?.name || 'Formation'}
+                  </span>
+                  <span className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                    Duree: {course.duration}
+                  </span>
+                  {course.instructor && (
+                    <span className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                      Formateur: {course.instructor.full_name || course.instructor.username}
+                    </span>
+                  )}
+                </div>
+
+                {/* Description */}
+                {course.description && (
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">Description</h2>
+                    <p className="text-gray-600 leading-relaxed">{course.description}</p>
+                  </div>
                 )}
-              </tbody>
-            </table>
+
+                {/* Prérequis */}
+                {course.prerequisites && (
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">Prerequis</h2>
+                    <p className="text-gray-600 leading-relaxed">{course.prerequisites}</p>
+                  </div>
+                )}
+
+                {/* Programme - VERSION CORRIGEE */}
+                {course.program && (
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800 mb-3">Programme de la formation</h2>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      {renderProgram(course.program)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
+              {/* Prix */}
+              <div className="text-center border-b pb-4 mb-4">
+                <div className="text-3xl font-bold text-blue-600">
+                  {getPriceText(course.price)}
+                </div>
+                {course.price > 0 && (
+                  <p className="text-sm text-gray-500 mt-1">TVA incluse</p>
+                )}
+              </div>
+
+              {/* Informations */}
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Niveau</span>
+                  <span className="font-medium">{getLevelLabel(course.level)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Duree</span>
+                  <span className="font-medium">{course.duration}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Places disponibles</span>
+                  <span className="font-medium">{course.available_seats}</span>
+                </div>
+                {course.instructor && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Formateur</span>
+                    <span className="font-medium">{course.instructor.full_name || course.instructor.username}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bouton d'inscription */}
+              <button 
+                onClick={() => {
+                  if (course.price === 0) {
+                    router.push(`/courses/${course.slug}/enroll`);
+                  } else {
+                    router.push(`/checkout/${course.slug}`);
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+              >
+                {course.price === 0 ? "S'inscrire gratuitement" : "S'inscrire maintenant"}
+              </button>
+
+              <p className="text-xs text-gray-400 text-center mt-3">
+                Acces illimite • Certificat inclus
+              </p>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

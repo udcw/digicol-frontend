@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { events } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 interface Event {
   id: number;
@@ -35,10 +35,19 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await events.list();
-      setEventsList(response.data.results || response.data || []);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('start_date', { ascending: true });
+
+      if (error) {
+        console.error('Erreur chargement des evenements:', error);
+        return;
+      }
+
+      setEventsList(data || []);
     } catch (error) {
-      console.error('Erreur chargement des événements:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +56,7 @@ export default function EventsPage() {
   const getTypeLabel = (type: string) => {
     const types: Record<string, string> = {
       'WORKSHOP': 'Atelier',
-      'CONFERENCE': 'Conférence',
+      'CONFERENCE': 'Conference',
       'BOOTCAMP': 'Bootcamp',
       'HACKATHON': 'Hackathon',
       'MEETUP': 'Rencontre',
@@ -85,7 +94,7 @@ export default function EventsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 mt-4">Chargement des événements...</p>
+          <p className="text-gray-500 mt-4">Chargement des evenements...</p>
         </div>
       </div>
     );
@@ -94,13 +103,11 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-6 md:py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Événements DigiCol</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1">Participez aux événements de la communauté</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Evenements DigiCol</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Participez aux evenements de la communaute</p>
         </div>
 
-        {/* Filtres */}
         <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto pb-2 md:pb-0 mb-6 md:mb-8 scrollbar-hide">
           <button
             onClick={() => setFilter('all')}
@@ -140,7 +147,7 @@ export default function EventsPage() {
                 : 'bg-white text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Conférences
+            Conferences
           </button>
           <button
             onClick={() => setFilter('MEETUP')}
@@ -154,10 +161,9 @@ export default function EventsPage() {
           </button>
         </div>
 
-        {/* Liste des événements */}
         {filteredEvents.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-500">Aucun événement disponible pour le moment.</p>
+            <p className="text-gray-500">Aucun evenement disponible pour le moment.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -198,9 +204,9 @@ export default function EventsPage() {
                     {event.description}
                   </p>
                   <div className="flex flex-col gap-1 mb-3 text-xs md:text-sm text-gray-500">
-                    <span>📅 {formatDate(event.start_date)}</span>
-                    <span>📍 {event.location}</span>
-                    <span>👥 {event.current_participants}/{event.max_participants} participants</span>
+                    <span>Date: {formatDate(event.start_date)}</span>
+                    <span>Lieu: {event.location}</span>
+                    <span>Participants: {event.current_participants}/{event.max_participants}</span>
                   </div>
                   <Link
                     href={`/events/${event.slug}`}
