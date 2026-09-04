@@ -1,31 +1,25 @@
-// app/dashboard/page.tsx
+// app/dashboard/carte/page.tsx
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/lib/supabase';
-import {
-  BookOpenIcon,
-  RocketLaunchIcon,
-  DocumentTextIcon,
+import { 
+  ArrowLeftIcon, 
+  PrinterIcon,
   UserCircleIcon,
-  AcademicCapIcon,
-  ClockIcon,
   IdentificationIcon,
-  TrophyIcon,
-  CalendarIcon,
 } from '@heroicons/react/24/outline';
 
-export default function DashboardPage() {
+export default function CarteMembrePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [member, setMember] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
-  const [badges, setBadges] = useState<any[]>([]);
-  const [courseStats, setCourseStats] = useState({ total: 0, completed: 0, inProgress: 0 });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -38,112 +32,31 @@ export default function DashboardPage() {
         router.push('/login');
         return;
       }
-      setUser(session.user);
 
-      // Récupérer le membre depuis la table users
-      const { data: userData, error: userError } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      if (userError) {
-        console.error('Erreur récupération membre:', userError);
-      } else {
-        setMember(userData);
+      if (error) throw error;
+      
+      if (!data) {
+        setError('Aucune information trouvée');
+        return;
       }
-
-      // Récupérer les badges du membre (si la table existe)
-      try {
-        const { data: badgesData } = await supabase
-          .from('member_badges')
-          .select('badges(*)')
-          .eq('member_id', session.user.id);
-
-        if (badgesData) {
-          setBadges(badgesData.map((b: any) => b.badges).filter(Boolean));
-        }
-      } catch (e) {
-        console.log('Table member_badges non trouvée');
-      }
-
-      // Récupérer les cours du membre
-      await fetchMemberCourses(session.user.id);
-
+      
+      setProfile(data);
     } catch (error) {
       console.error('Erreur:', error);
+      setError('Erreur lors du chargement de la carte');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMemberCourses = async (userId: string) => {
-    try {
-      // Récupérer les inscriptions avec la table enrollments
-      const { data: enrollments, error } = await supabase
-        .from('enrollments')
-        .select(`
-          id,
-          user_id,
-          course_id,
-          status,
-          enrollment_date,
-          completion_date,
-          progress,
-          courses:course_id (
-            id,
-            title,
-            level,
-            description,
-            duration,
-            price
-          )
-        `)
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Erreur récupération cours:', error);
-        return;
-      }
-
-      if (enrollments && enrollments.length > 0) {
-        // Transformer les données
-        const courses = enrollments.map((e: any) => {
-          const courseData = e.courses || {};
-          return {
-            id: courseData.id,
-            title: courseData.title || 'Cours sans titre',
-            level: courseData.level || 'Non défini',
-            description: courseData.description || '',
-            duration: courseData.duration || '',
-            price: courseData.price || 0,
-            status: e.status || 'PENDING',
-            progress: e.progress || 0,
-            enrollment_date: e.enrollment_date,
-            completion_date: e.completion_date,
-          };
-        });
-
-        setEnrolledCourses(courses);
-
-        // Statistiques
-        const total = courses.length;
-        const completed = courses.filter((c: any) => c.status === 'COMPLETED').length;
-        const inProgress = courses.filter((c: any) => c.status === 'IN_PROGRESS' || c.status === 'PENDING').length;
-        setCourseStats({ total, completed, inProgress });
-      } else {
-        // Aucune inscription
-        setEnrolledCourses([]);
-        setCourseStats({ total: 0, completed: 0, inProgress: 0 });
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
+  const handlePrint = () => {
+    window.print();
   };
 
   if (loading) {
@@ -154,165 +67,200 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">DigiCol</h1>
-          <div className="flex items-center gap-6">
-            <span className="text-sm text-gray-600 hidden sm:block">
-              {member?.full_name || user?.user_metadata?.username || user?.email}
-            </span>
-            <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-700 transition">
-              Déconnexion
-            </button>
-          </div>
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4 text-gray-300">ID</div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Carte non disponible</h2>
+          <p className="text-gray-500 mb-6">{error || 'Aucune information disponible'}</p>
+          <Link 
+            href="/dashboard" 
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            Retour au tableau de bord
+          </Link>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main className="container mx-auto px-4 py-4 md:py-8">
-        {/* En-tête avec identifiant DigiCol */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-slate-900">
-                Bonjour, {member?.full_name || user?.user_metadata?.username || 'Utilisateur'} 
-              </h1>
-              <p className="text-sm md:text-base text-gray-500">Bienvenue sur votre espace DigiCol</p>
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (typeof window !== 'undefined' ? window.location.origin : 'https://digicol-frontend.vercel.app');
+  const verifyUrl = `${baseUrl}/verify/${profile.digicol_id || 'ID-NON-DEFINI'}`;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8 print:bg-white print:py-0">
+      <div className="container mx-auto px-4 max-w-md print:max-w-full">
+        
+        {/* En-tête avec retour - Masqué à l'impression */}
+        <div className="flex items-center gap-4 mb-6 print:hidden">
+          <Link 
+            href="/dashboard" 
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
+          >
+            <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
+          </Link>
+          <h1 className="text-xl font-bold text-slate-800">Ma carte DigiCol</h1>
+          <button
+            onClick={handlePrint}
+            className="ml-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm"
+          >
+            <PrinterIcon className="h-4 w-4" />
+            Imprimer
+          </button>
+        </div>
+
+        {/* Carte */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden print:shadow-none print:border print:border-gray-200">
+          
+          {/* En-tête de la carte */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white text-center">
+            <div className="flex items-center justify-center gap-3 mb-1">
+              <Image 
+                src="/logo.png" 
+                alt="DigiCol" 
+                width={60} 
+                height={25} 
+                className="h-auto brightness-0 invert"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <span className="text-2xl font-bold tracking-tight">DigiCol</span>
             </div>
-            {member?.digicol_id && (
-              <div className="bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg">
-                <p className="text-xs text-gray-500">Identifiant DigiCol</p>
-                <p className="font-mono text-sm font-semibold text-blue-600">{member.digicol_id}</p>
+            <p className="text-xs text-blue-200 tracking-wider">CARTE DE MEMBRE OFFICIELLE</p>
+          </div>
+
+          {/* Corps de la carte */}
+          <div className="p-6">
+            
+            {/* Photo et identité */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-md">
+                {profile.full_name?.charAt(0) || profile.email?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <h2 className="font-bold text-slate-800 text-lg">
+                  {profile.full_name || 'Membre'}
+                </h2>
+                <p className="text-xs text-gray-500 font-mono">
+                  {profile.digicol_id || 'ID en cours...'}
+                </p>
+                <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  {profile.is_active_member ? 'Membre actif' : 'En attente de validation'}
+                </span>
+              </div>
+            </div>
+
+            {/* Informations détaillées */}
+            <div className="grid grid-cols-2 gap-3 text-sm border-t border-gray-100 pt-4">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Rôle</p>
+                <p className="font-medium text-slate-700">{profile.role || 'MEMBRE'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Domaine</p>
+                <p className="font-medium text-slate-700 truncate">{profile.domain || 'Non défini'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Email</p>
+                <p className="font-medium text-slate-700 text-xs truncate">{profile.email || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Membre depuis</p>
+                <p className="font-medium text-slate-700 text-sm">
+                  {profile.membership_date 
+                    ? new Date(profile.membership_date).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })
+                    : 'N/A'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* QR Code */}
+            {profile.digicol_id && (
+              <div className="flex justify-center mt-4 pt-4 border-t border-gray-100">
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                  <QRCodeSVG 
+                    value={verifyUrl}
+                    size={130}
+                    level="H"
+                    marginSize={3}
+                    imageSettings={{
+                      src: '/logo.png',
+                      height: 24,
+                      width: 24,
+                      excavate: true,
+                    }}
+                  />
+                </div>
               </div>
             )}
+
+            {/* Lien de vérification */}
+            <div className="mt-3 text-center">
+              <p className="text-[10px] text-gray-400">Scannez le code QR pour vérifier l'identité</p>
+              <p className="text-[9px] text-blue-600 font-mono truncate mt-1">{verifyUrl}</p>
+            </div>
+
+            {/* Cachet numérique */}
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-400">Cachet numérique</p>
+                  <p className="font-mono text-[10px] text-gray-500">DIGICOL-2026</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-gray-400">Version</p>
+                <p className="font-mono text-[10px] text-gray-500">v2.0</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Pied de la carte */}
+          <div className="bg-gray-50 px-6 py-3 text-center border-t border-gray-100 print:bg-white">
+            <p className="text-[10px] text-gray-400 tracking-wider">
+              DigiCol — Apprendre • Partager • Innover
+            </p>
+            <p className="text-[8px] text-gray-300 mt-0.5">
+              Document officiel — Toute reproduction est interdite
+            </p>
           </div>
         </div>
 
-        {/* Cartes d'information */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <AcademicCapIcon className="h-5 w-5 text-blue-600" />
-              <p className="text-xs text-gray-500 font-medium">Formations</p>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{courseStats.total}</p>
-          </div>
-          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <ClockIcon className="h-5 w-5 text-green-600" />
-              <p className="text-xs text-gray-500 font-medium">En cours</p>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{courseStats.inProgress}</p>
-          </div>
-          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <DocumentTextIcon className="h-5 w-5 text-purple-600" />
-              <p className="text-xs text-gray-500 font-medium">Certificats</p>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{courseStats.completed}</p>
-          </div>
-          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <TrophyIcon className="h-5 w-5 text-orange-600" />
-              <p className="text-xs text-gray-500 font-medium">Badges</p>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{badges.length}</p>
-          </div>
-        </div>
-
-        {/* Badges */}
-        {badges.length > 0 && (
-          <div className="mb-6">
-            <h2 className="font-bold text-slate-900 text-base mb-3">🏅 Mes badges</h2>
-            <div className="flex flex-wrap gap-2">
-              {badges.slice(0, 6).map((badge) => (
-                <span
-                  key={badge.id}
-                  className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-sm"
-                  title={badge.description}
-                >
-                  {badge.icon} {badge.name}
-                </span>
-              ))}
-              {badges.length > 6 && (
-                <span className="inline-flex items-center bg-gray-100 px-3 py-1.5 rounded-full text-sm text-gray-500">
-                  +{badges.length - 6}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Mes formations */}
-        {enrolledCourses.length > 0 && (
-          <div className="mb-6">
-            <h2 className="font-bold text-slate-900 text-base mb-3">Mes formations en cours</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {enrolledCourses.slice(0, 4).map((course: any) => (
-                <Link 
-                  key={course.id} 
-                  href={`/courses/${course.id}`} 
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition"
-                >
-                  <h3 className="font-semibold text-slate-800 text-sm">{course.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{course.level}</p>
-                  <div className="mt-2 bg-gray-200 rounded-full h-1.5">
-                    <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${course.progress || 0}%` }}></div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{course.progress || 0}%</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Menu principal */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          <Link href="/courses" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <BookOpenIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Formations</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Voir les cours</p>
-            </div>
-          </Link>
-          <Link href="/projects" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <RocketLaunchIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Projets</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Gérer mes projets</p>
-            </div>
-          </Link>
-          <Link href="/dashboard/carte" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <IdentificationIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Ma carte</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Carte numérique</p>
-            </div>
-          </Link>
-          <Link href="/certificates" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <DocumentTextIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Certificats</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Mes certifications</p>
-            </div>
-          </Link>
-          <Link href="/profile" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <UserCircleIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Profil</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Mes informations</p>
-            </div>
-          </Link>
-          <Link href="/events" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
-            <CalendarIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Événements</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Mes événements</p>
-            </div>
+        {/* Actions - Masqué à l'impression */}
+        <div className="mt-6 space-y-3 print:hidden">
+          <Link 
+            href="/dashboard" 
+            className="block text-center text-sm text-gray-500 hover:text-gray-700 transition"
+          >
+            ← Retour au tableau de bord
           </Link>
         </div>
-      </main>
+      </div>
+
+      {/* Styles d'impression */}
+      <style jsx global>{`
+        @media print {
+          body { background: white !important; }
+          .print\\:hidden { display: none !important; }
+          .print\\:bg-white { background: white !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .print\\:border { border: 1px solid #e5e7eb !important; }
+          .print\\:py-0 { padding-top: 0 !important; padding-bottom: 0 !important; }
+          .print\\:max-w-full { max-width: 100% !important; }
+        }
+      `}</style>
     </div>
   );
 }
