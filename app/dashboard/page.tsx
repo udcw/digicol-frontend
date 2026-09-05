@@ -201,7 +201,7 @@ export default function DashboardPage() {
         {/* Badges */}
         {badges.length > 0 && (
           <div className="mb-6">
-            <h2 className="font-bold text-slate-900 text-base mb-3">🏅 Mes badges</h2>
+            <h2 className="font-bold text-slate-900 text-base mb-3">Mes badges</h2>
             <div className="flex flex-wrap gap-2">
               {badges.slice(0, 6).map((badge) => (
                 <span
@@ -209,7 +209,8 @@ export default function DashboardPage() {
                   className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-sm"
                   title={badge.description}
                 >
-                  {badge.icon} {badge.name}
+                  {badge.icon && <span className="text-blue-600">{badge.icon}</span>}
+                  {badge.name}
                 </span>
               ))}
               {badges.length > 6 && (
