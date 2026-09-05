@@ -14,9 +14,11 @@ import {
   DocumentTextIcon,
   NewspaperIcon,
   BriefcaseIcon,
+  CalendarIcon,
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
   ChartBarIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminDashboardPage() {
@@ -35,6 +37,7 @@ export default function AdminDashboardPage() {
   });
   const [recentCourses, setRecentCourses] = useState<any[]>([]);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -81,13 +84,11 @@ export default function AdminDashboardPage() {
 
   const fetchStats = async () => {
     try {
-      // Compter les administrateurs
       const { count: adminCount } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
         .in('role', ['SUPER_ADMIN', 'ADMIN']);
 
-      // Compter les membres
       const { count: memberCount } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
@@ -126,22 +127,27 @@ export default function AdminDashboardPage() {
 
   const fetchRecentData = async () => {
     try {
-      // Récupérer les 5 derniers cours
       const { data: courses } = await supabase
         .from('courses')
         .select('id, title, level, price, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Récupérer les 5 derniers utilisateurs
       const { data: users } = await supabase
         .from('users')
         .select('id, email, username, role, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
+      const { data: events } = await supabase
+        .from('events')
+        .select('id, title, event_type, start_date, is_published')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
       setRecentCourses(courses || []);
       setRecentUsers(users || []);
+      setRecentEvents(events || []);
     } catch (error) {
       console.error('Erreur récupération données récentes:', error);
     }
@@ -163,12 +169,12 @@ export default function AdminDashboardPage() {
 
   const statItems = [
     { label: 'Total Utilisateurs', value: stats.users, icon: UsersIcon, color: 'blue' },
-    { label: 'Membres', value: stats.members, icon: UsersIcon, color: 'green' },
+    { label: 'Membres', value: stats.members, icon: UserGroupIcon, color: 'green' },
     { label: 'Administrateurs', value: stats.admins, icon: UsersIcon, color: 'purple' },
     { label: 'Formations', value: stats.courses, icon: BookOpenIcon, color: 'indigo' },
     { label: 'Projets', value: stats.projects, icon: RocketLaunchIcon, color: 'orange' },
     { label: 'Certificats', value: stats.certificates, icon: DocumentTextIcon, color: 'yellow' },
-    { label: 'Événements', value: stats.events, icon: BriefcaseIcon, color: 'red' },
+    { label: 'Événements', value: stats.events, icon: CalendarIcon, color: 'red' },
     { label: 'Opportunités', value: stats.opportunities, icon: BriefcaseIcon, color: 'pink' },
   ];
 
@@ -176,12 +182,12 @@ export default function AdminDashboardPage() {
     { href: '/admin/members', label: 'Membres', icon: UsersIcon, description: 'Gérer les utilisateurs' },
     { href: '/admin/courses', label: 'Formations', icon: BookOpenIcon, description: 'Gérer les cours' },
     { href: '/admin/projects', label: 'Projets', icon: RocketLaunchIcon, description: 'Gérer les projets' },
+    { href: '/admin/events', label: 'Événements', icon: CalendarIcon, description: 'Gérer les événements' },
+    { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, description: 'Gérer les offres' },
     { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon, description: 'Gérer les articles' },
     { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon, description: 'Gérer les certificats' },
-    { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, description: 'Gérer les offres' },
   ];
 
-  // Couleurs pour les stats
   const colorClasses: Record<string, string> = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -216,9 +222,14 @@ export default function AdminDashboardPage() {
             <h1 className="text-2xl font-bold text-slate-800">Tableau de bord</h1>
             <p className="text-sm text-gray-500 mt-1">Vue d'ensemble de la plateforme DigiCol</p>
           </div>
-          <Link href="/admin/courses/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-            + Nouvelle formation
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/admin/events/new" className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm font-medium">
+              + Nouvel événement
+            </Link>
+            <Link href="/admin/courses/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+              + Nouvelle formation
+            </Link>
+          </div>
         </div>
 
         {/* Statistiques */}
@@ -259,7 +270,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Données récentes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Derniers cours */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -287,6 +298,36 @@ export default function AdminDashboardPage() {
             )}
             <Link href="/admin/courses" className="text-sm text-blue-600 hover:text-blue-700 mt-4 inline-block">
               Voir toutes les formations →
+            </Link>
+          </div>
+
+          {/* Derniers événements */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-purple-600" />
+              Derniers événements
+            </h3>
+            {recentEvents.length === 0 ? (
+              <p className="text-sm text-gray-500">Aucun événement ajouté</p>
+            ) : (
+              <div className="space-y-3">
+                {recentEvents.map((event) => (
+                  <Link key={event.id} href={`/admin/events/${event.id}`} className="block hover:bg-gray-50 p-2 rounded-lg transition">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-slate-800 text-sm">{event.title}</p>
+                        <p className="text-xs text-gray-500">{event.event_type} • {event.is_published ? 'Publié' : 'Brouillon'}</p>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(event.start_date).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+            <Link href="/admin/events" className="text-sm text-purple-600 hover:text-purple-700 mt-4 inline-block">
+              Voir tous les événements →
             </Link>
           </div>
 
