@@ -1,0 +1,66 @@
+name: 🔒 DevGuard Security Scan
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout du code
+        uses: actions/checkout@v3
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: 📦 Installation de DevGuard
+        run: |
+          pip install jordan-devguard
+      
+      - name: 🔍 Scan de sécurité
+        id: scan
+        continue-on-error: true
+        run: |
+          devguard scan . --format json --output security-report.json
+      
+      - name: 📊 Vérification du score
+        id: check-score
+        run: |
+          if [ -f security-report.json ]; then
+            SCORE=$(python -c "import json; data=json.load(open('security-report.json')); print(data.get('score', 0))")
+            echo "score=$SCORE" >> $GITHUB_OUTPUT
+            
+            echo "📊 Security Score: $SCORE/100"
+            
+            if [ $SCORE -lt 70 ]; then
+              echo "❌ Security score ($SCORE) is below 70"
+              exit 1
+            fi
+            echo "✅ Security score ($SCORE) is good!"
+          else
+            echo "❌ No report generated"
+            exit 1
+          fi
+      
+      - name: 📤 Upload du rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-${{ github.sha }}
+          path: security-report.json
+      
+      - name: 📊 Résumé dans les logs
+        if: always()
+        run: |
+          echo "## 🔒 DevGuard Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Métrique | Résultat |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Score** | **${{ steps.check-score.outputs.score }}/100** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Statut** | ${{ steps.check-score.outputs.score >= 70 && '✅ Passé' || '❌ Échoué' }} |" >> $GITHUB_STEP_SUMMARY
