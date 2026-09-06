@@ -23,19 +23,29 @@ jobs:
         run: pip install jordan-devguard
       
       - name: Scan de securite
+        id: scan
         run: |
-          devguard scan . --format json --output security-report.json
+          devguard scan . --format json --output security-report.json || true
+          echo "Scan termine"
           cat security-report.json
       
       - name: Verification du score
+        id: check-score
         run: |
-          SCORE=$(python -c "import json; print(json.load(open('security-report.json'))['score'])")
-          echo "Security Score: $SCORE/100"
-          if [ $SCORE -lt 70 ]; then
-            echo " Security score is below 70"
+          if [ -f security-report.json ]; then
+            SCORE=$(python -c "import json; print(json.load(open('security-report.json')).get('score', 0))")
+            echo "score=$SCORE" >> $GITHUB_OUTPUT
+            echo "Security Score: $SCORE/100"
+            
+            if [ $SCORE -lt 70 ]; then
+              echo " Security score is below 70"
+              exit 1
+            fi
+            echo "Security score is good!"
+          else
+            echo "No report generated"
             exit 1
           fi
-          echo " Security score is good!"
       
       - name: Upload du rapport
         if: always()
