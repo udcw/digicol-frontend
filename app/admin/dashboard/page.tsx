@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { 
+import {
   UsersIcon,
   BookOpenIcon,
   RocketLaunchIcon,
@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         router.push('/admin/login');
         return;
@@ -186,6 +186,7 @@ export default function AdminDashboardPage() {
     { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, description: 'Gérer les offres' },
     { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon, description: 'Gérer les articles' },
     { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon, description: 'Gérer les certificats' },
+    { href: '/admin/statistics', label: 'Statistiques', icon: ChartBarIcon, description: 'Voir les statistiques' },
   ];
 
   const colorClasses: Record<string, string> = {
