@@ -19,6 +19,7 @@ import {
   BellIcon,
   CheckCircleIcon,
   XCircleIcon,
+  WalletIcon,
 } from '@heroicons/react/24/outline';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +43,6 @@ function DashboardContent() {
 
     if (approved === 'approved' && project) {
       setSuccessMessage(`Votre inscription au projet "${project}" a ete approuvee !`);
-      
       setTimeout(() => {
         router.replace('/dashboard');
       }, 5000);
@@ -103,9 +103,28 @@ function DashboardContent() {
 
   const fetchMemberCourses = async (userId: string) => {
     try {
+      // ✅ Récupérer les inscriptions avec la relation courses
       const { data: enrollments, error } = await supabase
         .from('enrollments')
-        .select('*')
+        .select(`
+          id,
+          user_id,
+          course_id,
+          status,
+          progress,
+          is_completed,
+          completed_at,
+          enrollment_date,
+          courses:course_id (
+            id,
+            title,
+            slug,
+            level,
+            description,
+            duration,
+            price
+          )
+        `)
         .eq('user_id', userId);
 
       if (error) {
@@ -113,40 +132,34 @@ function DashboardContent() {
         return;
       }
 
+      console.log(' Cours trouvés:', enrollments);
+
       if (enrollments && enrollments.length > 0) {
-        const courseIds = enrollments.map((e: any) => e.course_id).filter(Boolean);
-        
-        if (courseIds.length > 0) {
-          const { data: courses, error: coursesError } = await supabase
-            .from('courses')
-            .select('id, title, level, description, duration, price')
-            .in('id', courseIds);
+        // Transformer les données
+        const courses = enrollments.map((e: any) => {
+          const courseData = e.courses || {};
+          return {
+            id: courseData.id,
+            title: courseData.title || 'Cours sans titre',
+            slug: courseData.slug || courseData.id,
+            level: courseData.level || 'Non defini',
+            description: courseData.description || '',
+            duration: courseData.duration || '',
+            price: courseData.price || 0,
+            status: e.status || 'PENDING',
+            progress: e.progress || 0,
+            is_completed: e.is_completed || false,
+            enrollment_date: e.enrollment_date,
+            completion_date: e.completion_date,
+          };
+        });
 
-          if (!coursesError && courses) {
-            const coursesWithProgress = enrollments.map((e: any) => {
-              const courseData = courses.find((c: any) => c.id === e.course_id);
-              return {
-                id: courseData?.id || e.course_id,
-                title: courseData?.title || 'Cours sans titre',
-                level: courseData?.level || 'Non defini',
-                description: courseData?.description || '',
-                duration: courseData?.duration || '',
-                price: courseData?.price || 0,
-                status: e.status || 'PENDING',
-                progress: e.progress || 0,
-                enrollment_date: e.enrollment_date,
-                completion_date: e.completion_date,
-              };
-            });
+        setEnrolledCourses(courses);
 
-            setEnrolledCourses(coursesWithProgress);
-
-            const total = coursesWithProgress.length;
-            const completed = coursesWithProgress.filter((c: any) => c.status === 'COMPLETED').length;
-            const inProgress = coursesWithProgress.filter((c: any) => c.status === 'IN_PROGRESS' || c.status === 'PENDING').length;
-            setCourseStats({ total, completed, inProgress });
-          }
-        }
+        const total = courses.length;
+        const completed = courses.filter((c: any) => c.is_completed === true).length;
+        const inProgress = courses.filter((c: any) => c.is_completed !== true).length;
+        setCourseStats({ total, completed, inProgress });
       } else {
         setEnrolledCourses([]);
         setCourseStats({ total: 0, completed: 0, inProgress: 0 });
@@ -227,7 +240,7 @@ function DashboardContent() {
         .eq('id', notificationId);
 
       if (!error) {
-        setNotifications(notifications.map(n => 
+        setNotifications(notifications.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
         ));
       }
@@ -384,14 +397,12 @@ function DashboardContent() {
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {notifications.slice(0, 5).map((notif: any) => {
                 const { href, text } = getNotificationLink(notif);
-                
                 return (
                   <div
                     key={notif.id}
                     onClick={() => markNotificationAsRead(notif.id)}
-                    className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer transition ${
-                      notif.is_read ? 'border-gray-100' : 'border-blue-200 bg-blue-50/30 hover:bg-blue-50'
-                    }`}
+                    className={`bg-white p-4 rounded-xl shadow-sm border cursor-pointer transition ${notif.is_read ? 'border-gray-100' : 'border-blue-200 bg-blue-50/30 hover:bg-blue-50'
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -609,24 +620,53 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* ✅ SECTION MES FORMATIONS EN COURS - CORRIGÉE */}
         {enrolledCourses.length > 0 && (
           <div className="mb-6">
-            <h2 className="font-bold text-slate-900 text-base mb-3">Mes formations en cours</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <BookOpenIcon className="h-5 w-5 text-blue-600" />
+                Mes formations en cours
+              </h2>
+              <Link href="/courses" className="text-xs text-blue-600 hover:underline">
+                Voir toutes
+              </Link>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {enrolledCourses.slice(0, 4).map((course: any) => (
-                <Link key={course.id} href={`/courses/${course.id}`} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                  <h3 className="font-semibold text-slate-800 text-sm">{course.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{course.level}</p>
-                  <div className="mt-2 bg-gray-200 rounded-full h-1.5">
-                    <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${course.progress || 0}%` }}></div>
+                <Link 
+                  key={course.id} 
+                  href={`/courses/${course.slug}/learn`} 
+                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-slate-800 text-sm line-clamp-1">
+                      {course.title}
+                    </h3>
+                    <span className={`text-xs font-medium ${
+                      course.is_completed ? 'text-green-600' : 'text-blue-600'
+                    }`}>
+                      {course.is_completed ? ' Terminé' : `${course.progress || 0}%`}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{course.progress || 0}%</p>
+                  <div className="mt-2 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                        course.is_completed ? 'bg-green-600' : 'bg-blue-600'
+                      }`} 
+                      style={{ width: `${course.progress || 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {course.duration || 'Durée non spécifiée'} • {course.level}
+                  </p>
                 </Link>
               ))}
             </div>
           </div>
         )}
 
+        {/* Menu principal */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           <Link href="/courses" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
             <BookOpenIcon className="h-8 w-8 text-blue-600" />
@@ -640,6 +680,13 @@ function DashboardContent() {
             <div>
               <h2 className="font-bold text-slate-900 text-sm">Projets</h2>
               <p className="text-xs text-gray-500 mt-0.5">Explorer les projets</p>
+            </div>
+          </Link>
+          <Link href="/dashboard/wallet" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">
+            <WalletIcon className="h-8 w-8 text-blue-600" />
+            <div>
+              <h2 className="font-bold text-slate-900 text-sm">Portefeuille</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Mon budget DigiCol</p>
             </div>
           </Link>
           <Link href="/dashboard/carte" className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition text-center">

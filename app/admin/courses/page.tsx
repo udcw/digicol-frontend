@@ -1,4 +1,3 @@
-// app/admin/courses/page.tsx
 
 'use client';
 
@@ -14,6 +13,7 @@ import {
   PencilIcon,
   TrashIcon,
   EyeIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminCoursesPage() {
@@ -23,6 +23,10 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // État pour les IDs de vidéos (stockés en tant que chaîne de caractères séparée par des virgules)
+  const [videoIdsInput, setVideoIdsInput] = useState('');
+  
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -35,6 +39,8 @@ export default function AdminCoursesPage() {
     available_seats: 10,
     category_id: null as number | null,
     is_published: false,
+    youtube_playlist_id: '',
+    has_videos: false,
   });
 
   useEffect(() => {
@@ -80,9 +86,18 @@ export default function AdminCoursesPage() {
     e.preventDefault();
     try {
       const userData = await supabase.auth.getUser();
+      
+      // Convertir la chaîne d'IDs en tableau
+      const videoIds = videoIdsInput
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id !== '');
+
       const data = {
         ...formData,
         instructor_id: userData.data.user?.id,
+        youtube_video_ids: videoIds,
+        has_videos: formData.has_videos && videoIds.length > 0,
       };
       
       if (editingId) {
@@ -114,7 +129,13 @@ export default function AdminCoursesPage() {
       available_seats: course.available_seats,
       category_id: course.category_id,
       is_published: course.is_published,
+      youtube_playlist_id: course.youtube_playlist_id || '',
+      has_videos: course.has_videos || false,
     });
+    
+    // Convertir le tableau d'IDs en chaîne séparée par des virgules
+    setVideoIdsInput((course.youtube_video_ids || []).join(', '));
+    
     setShowForm(true);
   };
 
@@ -145,58 +166,43 @@ export default function AdminCoursesPage() {
       available_seats: 10,
       category_id: null,
       is_published: false,
+      youtube_playlist_id: '',
+      has_videos: false,
     });
+    setVideoIdsInput('');
   };
 
-  // Fonction pour formater l'aperçu du programme - CORRIGEE pour accepter null
-  const renderProgramPreview = (program: string | null) => {
-    if (!program) return null;
+  const renderProgramPreview = (program: string) => {
+    if (!program) return <span className="text-gray-400">Aucun</span>;
     
-    // Remplacer les \n textuels par de vrais sauts de ligne
     const cleanProgram = program.replace(/\\n/g, '\n');
     const lines = cleanProgram.split('\n').filter(line => line.trim() !== '');
     
-    if (lines.length === 0) return null;
+    if (lines.length === 0) return <span className="text-gray-400">Aucun</span>;
     
-    // Limiter à 3 lignes pour l'aperçu
-    const previewLines = lines.slice(0, 3);
-    
-    return previewLines.map((line, index) => {
+    return lines.map((line, index) => {
       const trimmedLine = line.trim();
       if (trimmedLine.startsWith('-')) {
         return (
-          <div key={index} className="flex items-start gap-1 text-xs text-gray-600">
+          <div key={index} className="flex items-start gap-1 text-xs text-gray-600 ml-2">
             <span className="text-blue-500">•</span>
-            <span>{trimmedLine.substring(1).trim().slice(0, 30)}</span>
+            <span>{trimmedLine.substring(1).trim()}</span>
           </div>
         );
       }
       if (trimmedLine.toLowerCase().startsWith('module')) {
         return (
-          <div key={index} className="font-medium text-xs text-slate-700">
+          <div key={index} className="font-medium text-xs text-slate-700 mt-1">
             {trimmedLine}
           </div>
         );
       }
       return (
         <div key={index} className="text-xs text-gray-500">
-          {trimmedLine.slice(0, 30)}
+          {trimmedLine}
         </div>
       );
     });
-  };
-
-  // Fonction pour compter les modules et sous-points - CORRIGEE pour accepter null
-  const getProgramStats = (program: string | null) => {
-    if (!program) return { modules: 0, items: 0 };
-    
-    const cleanProgram = program.replace(/\\n/g, '\n');
-    const lines = cleanProgram.split('\n').filter(line => line.trim() !== '');
-    
-    const modules = lines.filter(line => line.trim().toLowerCase().startsWith('module')).length;
-    const items = lines.filter(line => line.trim().startsWith('-')).length;
-    
-    return { modules, items };
   };
 
   if (loading) {
@@ -205,9 +211,9 @@ export default function AdminCoursesPage() {
 
   const getLevelLabel = (level: string) => {
     const levels: Record<string, string> = {
-      'DEBUTANT': 'Débutant',
+      'DEBUTANT': 'Debutant',
       'INTERMEDIAIRE': 'Intermédiaire',
-      'AVANCE': 'Avancé',
+      'AVANCE': 'Avance',
       'EXPERT': 'Expert',
     };
     return levels[level] || level;
@@ -243,7 +249,6 @@ export default function AdminCoursesPage() {
           </button>
         </div>
 
-        {/* Formulaire */}
         {showForm && (
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
             <h2 className="text-lg font-bold text-slate-800 mb-4">
@@ -280,13 +285,13 @@ export default function AdminCoursesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Categorie</label>
                 <select
                   value={formData.category_id || ''}
                   onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Sélectionner</option>
+                  <option value="">Selectionner</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -299,14 +304,14 @@ export default function AdminCoursesPage() {
                   onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="DEBUTANT">Débutant</option>
+                  <option value="DEBUTANT">Debutant</option>
                   <option value="INTERMEDIAIRE">Intermédiaire</option>
-                  <option value="AVANCE">Avancé</option>
+                  <option value="AVANCE">Avance</option>
                   <option value="EXPERT">Expert</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Durée</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duree</label>
                 <input
                   type="text"
                   value={formData.duration}
@@ -322,14 +327,11 @@ export default function AdminCoursesPage() {
                   onChange={(e) => setFormData({ ...formData, program: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  placeholder="Module 1: Introduction&#10;- Syntaxe et variables&#10;- Structures de donnees&#10;&#10;Module 2: Concepts avances"
+                  placeholder="Module 1: Introduction&#10;- Syntaxe et variables"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  Utilisez des sauts de ligne (Entrée) et des tirets (-) pour les sous-points
-                </p>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prérequis</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prerequis</label>
                 <textarea
                   value={formData.prerequisites}
                   onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
@@ -355,7 +357,71 @@ export default function AdminCoursesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* SECTION YOUTUBE - Utilisant la structure existante */}
+              <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                <h3 className="text-md font-semibold text-slate-700 mb-3">Videos YouTube</h3>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID de la playlist YouTube</label>
+                <input
+                  type="text"
+                  value={formData.youtube_playlist_id}
+                  onChange={(e) => setFormData({ ...formData, youtube_playlist_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="PLillGF-RfqbZ7s3t6ZInY3NjEOOX7hsBv"
+                />
+                <p className="text-xs text-gray-400 mt-1">ID de la playlist YouTube (optionnel)</p>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">IDs des videos YouTube</label>
+                <textarea
+                  value={videoIdsInput}
+                  onChange={(e) => setVideoIdsInput(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  placeholder="dQw4w9WgXcQ, dQw4w9WgXcQ, dQw4w9WgXcQ"
+                />
+                <p className="text-xs text-gray-400 mt-1">Separes par des virgules</p>
+                
+                {/* Aperçu des miniatures */}
+                {videoIdsInput && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {videoIdsInput.split(',').map((id, index) => {
+                      const cleanId = id.trim();
+                      if (!cleanId) return null;
+                      return (
+                        <div key={index} className="relative w-24 h-16 bg-gray-100 rounded overflow-hidden border border-gray-200">
+                          <img
+                            src={`https://img.youtube.com/vi/${cleanId}/mqdefault.jpg`}
+                            alt={`Video ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          <span className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5">
+                            {index + 1}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={formData.has_videos}
+                    onChange={(e) => setFormData({ ...formData, has_videos: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  Activer les videos pour cette formation
+                </label>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <input
                     type="checkbox"
@@ -363,15 +429,16 @@ export default function AdminCoursesPage() {
                     onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  Publié
+                  Publie
                 </label>
               </div>
-              <div className="md:col-span-2 flex gap-3">
+
+              <div className="md:col-span-2 flex gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
                 >
-                  {editingId ? 'Mettre à jour' : 'Créer'}
+                  {editingId ? 'Mettre à jour' : 'Creer'}
                 </button>
                 <button
                   type="button"
@@ -385,15 +452,15 @@ export default function AdminCoursesPage() {
           </div>
         )}
 
-        {/* Liste des formations avec aperçu du programme */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Titre</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Catégorie</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Categorie</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Niveau</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Videos</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Prix</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Programme</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Statut</th>
@@ -403,65 +470,71 @@ export default function AdminCoursesPage() {
               <tbody>
                 {courses.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-gray-500 py-12">
+                    <td colSpan={8} className="text-center text-gray-500 py-12">
                       <BookOpenIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
                       <p>Aucune formation</p>
                       <button
                         onClick={() => setShowForm(true)}
                         className="text-blue-600 hover:underline mt-2"
                       >
-                        Créer la première formation
+                        Creer la premiere formation
                       </button>
                     </td>
                   </tr>
                 ) : (
-                  courses.map((course) => {
-                    const stats = getProgramStats(course.program);
-                    return (
-                      <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-slate-800">{course.title}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{course.category?.name || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{getLevelLabel(course.level)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>
-                        <td className="px-4 py-3">
-                          <div className="max-w-[200px]">
-                            <div className="max-h-[60px] overflow-y-auto text-xs">
-                              {course.program ? renderProgramPreview(course.program) : <span className="text-gray-400">Aucun programme</span>}
-                            </div>
-                            {course.program && stats.modules > 0 && (
-                              <div className="text-[10px] text-gray-400 mt-1">
-                                {stats.modules} module{stats.modules > 1 ? 's' : ''} • {stats.items} point{stats.items > 1 ? 's' : ''}
-                              </div>
+                  courses.map((course) => (
+                    <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-800">{course.title}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{course.category?.name || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{getLevelLabel(course.level)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {course.has_videos && course.youtube_video_ids && course.youtube_video_ids.length > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                              {course.youtube_video_ids.length} videos
+                            </span>
+                            {course.youtube_video_ids.length > 1 && (
+                              <span className="text-xs text-gray-400">
+                                ({course.youtube_video_ids.join(', ')})
+                              </span>
                             )}
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-1 rounded-full ${course.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {course.is_published ? 'Publié' : 'Brouillon'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Link href={`/courses/${course.slug}`} target="_blank" className="text-gray-500 hover:text-gray-700 p-1">
-                              <EyeIcon className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleEdit(course)}
-                              className="text-blue-600 hover:text-blue-800 p-1"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(course.id)}
-                              className="text-red-600 hover:text-red-800 p-1"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                        ) : (
+                          <span className="text-xs text-gray-400">Aucune</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>
+                      <td className="px-4 py-3">
+                        <div className="max-w-[200px] max-h-[60px] overflow-y-auto text-xs">
+                          {course.program ? renderProgramPreview(course.program) : <span className="text-gray-400">Aucun</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full ${course.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {course.is_published ? 'Publie' : 'Brouillon'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/courses/${course.slug}`} target="_blank" className="text-gray-500 hover:text-gray-700 p-1">
+                            <EyeIcon className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleEdit(course)}
+                            className="text-blue-600 hover:text-blue-800 p-1"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(course.id)}
+                            className="text-red-600 hover:text-red-800 p-1"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>

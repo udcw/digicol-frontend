@@ -63,7 +63,18 @@ export type Course = {
   updated_at: string;
   category?: Category;
   instructor?: User;
+  youtube_playlist_id: string | null;
+  youtube_video_ids: string[];
+  has_videos: boolean;
+  youtube_videos: YouTubeVideo[];
 };
+export type YouTubeVideo ={
+  id: string;           // ID YouTube de la vidéo
+  title?: string;       // Titre de la vidéo
+  thumbnail?: string;   // Miniature
+  duration?: string;    // Durée
+  order: number;        // Ordre d'affichage
+}
 
 export type Project = {
   id: number;

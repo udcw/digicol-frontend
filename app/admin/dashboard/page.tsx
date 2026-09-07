@@ -19,6 +19,7 @@ import {
   AcademicCapIcon,
   ChartBarIcon,
   UserGroupIcon,
+  WalletIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminDashboardPage() {
@@ -186,6 +187,7 @@ export default function AdminDashboardPage() {
     { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, description: 'Gérer les offres' },
     { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon, description: 'Gérer les articles' },
     { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon, description: 'Gérer les certificats' },
+    { href: '/admin/wallets', label: 'Portefeuilles', icon: WalletIcon, description: 'Gérer les portefeuilles' }, // ✅ AJOUTÉ
     { href: '/admin/statistics', label: 'Statistiques', icon: ChartBarIcon, description: 'Voir les statistiques' },
   ];
 

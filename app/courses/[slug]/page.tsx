@@ -40,12 +40,55 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [enrollment, setEnrollment] = useState<any>(null);
 
   useEffect(() => {
     if (slug) {
+      checkAuth();
       fetchCourse();
     }
   }, [slug]);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setIsLoggedIn(!!session);
+    
+    if (session && course) {
+      // Vérifier l'inscription après avoir chargé le cours
+      checkEnrollment(session.user.id);
+    }
+  };
+
+  const checkEnrollment = async (userId: string) => {
+    if (!course) return;
+    
+    try {
+      console.log(' Vérification inscription pour user:', userId, 'course:', course.id);
+
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select('id, status, progress, is_completed')
+        .eq('user_id', userId)
+        .eq('course_id', course.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error(' Erreur vérification:', error);
+        return;
+      }
+
+      if (data) {
+        console.log(' Inscription trouvée:', data);
+        setEnrollment(data);
+      } else {
+        console.log(' Non inscrit');
+        setEnrollment(null);
+      }
+    } catch (error) {
+      console.error(' Erreur:', error);
+    }
+  };
 
   const fetchCourse = async () => {
     try {
@@ -83,6 +126,12 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
       }
 
       setCourse(data);
+      
+      // Vérifier l'inscription si l'utilisateur est connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await checkEnrollment(session.user.id);
+      }
     } catch (error: any) {
       console.error('Erreur:', error);
       setError(error.message || 'Une erreur est survenue.');
@@ -116,16 +165,13 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
     return `${price.toLocaleString()} FCFA`;
   };
 
-  // Fonction pour afficher le programme avec des sauts de ligne
   const renderProgram = (program: string) => {
     if (!program) return null;
     
-    // Remplacer les \n par des <br /> et traiter les tirets
     const lines = program.split('\n').filter(line => line.trim() !== '');
     
     return lines.map((line, index) => {
       const trimmedLine = line.trim();
-      // Si la ligne commence par un tiret, c'est un sous-point
       if (trimmedLine.startsWith('-')) {
         return (
           <div key={index} className="flex items-start gap-2 ml-4 text-gray-600">
@@ -134,7 +180,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
           </div>
         );
       }
-      // Si la ligne commence par "Module", c'est un titre
       if (trimmedLine.toLowerCase().startsWith('module')) {
         return (
           <h3 key={index} className="text-lg font-semibold text-slate-800 mt-4 mb-2">
@@ -142,7 +187,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
           </h3>
         );
       }
-      // Ligne normale
       return (
         <p key={index} className="text-gray-600 mb-1">
           {trimmedLine}
@@ -179,7 +223,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
-        {/* Fil d'Ariane */}
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/" className="hover:text-blue-600 transition">Accueil</Link>
           <span>›</span>
@@ -189,10 +232,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Contenu principal */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              {/* Bannière */}
               <div className="h-56 bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center relative">
                 <div className="text-center text-white">
                   <span className="text-4xl font-bold">DigiCol</span>
@@ -206,7 +247,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
               <div className="p-6">
                 <h1 className="text-3xl font-bold text-slate-800 mb-4">{course.title}</h1>
 
-                {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   <span className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
                     {course.category?.name || 'Formation'}
@@ -221,7 +261,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
                   )}
                 </div>
 
-                {/* Description */}
                 {course.description && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-slate-800 mb-2">Description</h2>
@@ -229,7 +268,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
                   </div>
                 )}
 
-                {/* Prérequis */}
                 {course.prerequisites && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-slate-800 mb-2">Prerequis</h2>
@@ -237,7 +275,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
                   </div>
                 )}
 
-                {/* Programme - VERSION CORRIGEE */}
                 {course.program && (
                   <div>
                     <h2 className="text-xl font-bold text-slate-800 mb-3">Programme de la formation</h2>
@@ -250,10 +287,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
-              {/* Prix */}
               <div className="text-center border-b pb-4 mb-4">
                 <div className="text-3xl font-bold text-blue-600">
                   {getPriceText(course.price)}
@@ -263,7 +298,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
                 )}
               </div>
 
-              {/* Informations */}
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Niveau</span>
@@ -285,19 +319,37 @@ export default function CourseDetailPage({ params }: { params: Promise<{ slug: s
                 )}
               </div>
 
-              {/* Bouton d'inscription */}
-              <button 
-                onClick={() => {
-                  if (course.price === 0) {
-                    router.push(`/courses/${course.slug}/enroll`);
-                  } else {
-                    router.push(`/checkout/${course.slug}`);
-                  }
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
-              >
-                {course.price === 0 ? "S'inscrire gratuitement" : "S'inscrire maintenant"}
-              </button>
+              {/* ✅ BOUTONS CORRIGÉS */}
+              {isLoggedIn && enrollment ? (
+                <div className="space-y-3">
+                  <Link
+                    href={`/courses/${course.slug}/learn`}
+                    className="block w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition text-center"
+                  >
+                    {enrollment.progress > 0 ? `Continuer (${enrollment.progress}%)` : 'Commencer la formation'}
+                  </Link>
+                  <p className="text-xs text-gray-400 text-center">
+                    Progression: {enrollment.progress || 0}%
+                    {enrollment.is_completed && ' Terminé'}
+                  </p>
+                </div>
+              ) : isLoggedIn ? (
+                // Connecté mais non inscrit
+                <button 
+                  onClick={() => router.push(`/courses/${course.slug}/enroll`)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+                >
+                  {course.price === 0 ? "S'inscrire gratuitement" : `S'inscrire (${course.price} FCFA)`}
+                </button>
+              ) : (
+                // Non connecté
+                <Link
+                  href="/login"
+                  className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition text-center"
+                >
+                  Connectez-vous pour vous inscrire
+                </Link>
+              )}
 
               <p className="text-xs text-gray-400 text-center mt-3">
                 Acces illimite • Certificat inclus
