@@ -25,6 +25,7 @@ import {
   InformationCircleIcon,
   EnvelopeIcon,
   QuestionMarkCircleIcon,
+  BellIcon,
 } from '@heroicons/react/24/outline';
 
 export default function ClientLayout({
@@ -131,7 +132,6 @@ export default function ClientLayout({
                 );
               })}
 
-              {/* Pages secondaires */}
               {secondaryNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -149,7 +149,6 @@ export default function ClientLayout({
                 );
               })}
               
-              {/* Bouton Admin */}
               {isLoggedIn && isAdmin && (
                 <Link
                   href="/admin/dashboard"
@@ -166,9 +165,7 @@ export default function ClientLayout({
               
               {isLoggedIn ? (
                 <>
-                  {/* ✅ CLOCHE DE NOTIFICATIONS */}
                   <NotificationBell />
-
                   <Link 
                     href="/dashboard" 
                     className={`flex items-center gap-1.5 transition font-medium ${
@@ -197,14 +194,25 @@ export default function ClientLayout({
             </nav>
 
             {/* Bouton menu mobile */}
-            <button onClick={toggleMenu} className="lg:hidden text-gray-600 p-2">
+            <button 
+              onClick={toggleMenu} 
+              className="lg:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
+              aria-label="Menu"
+            >
               {isMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
             </button>
           </div>
 
           {/* Navigation Mobile */}
-          <div className={`lg:hidden bg-white transition-all duration-300 overflow-hidden ${isMenuOpen ? 'max-h-[900px] opacity-100' : 'max-h-0 opacity-0'}`}>
-            <nav className="py-4 flex flex-col gap-2 border-t border-gray-100 mt-3">
+          <div 
+            className={`lg:hidden transition-all duration-300 ${
+              isMenuOpen 
+                ? 'max-h-[calc(100vh-80px)] opacity-100 overflow-y-auto' 
+                : 'max-h-0 opacity-0 overflow-hidden'
+            }`}
+          >
+            <nav className="py-4 flex flex-col gap-1 border-t border-gray-100 mt-3">
+              
               {/* Navigation principale */}
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -214,7 +222,9 @@ export default function ClientLayout({
                     key={item.href}
                     href={item.href}
                     className={`flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg ${
-                      isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                      isActive 
+                        ? 'bg-blue-50 text-blue-600' 
+                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                     }`}
                     onClick={closeMenu}
                   >
@@ -236,7 +246,9 @@ export default function ClientLayout({
                     key={item.href}
                     href={item.href}
                     className={`flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg ${
-                      isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                      isActive 
+                        ? 'bg-gray-100 text-gray-900' 
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                     onClick={closeMenu}
                   >
@@ -252,43 +264,61 @@ export default function ClientLayout({
                   <div className="border-t border-gray-100 my-2"></div>
                   <Link 
                     href="/admin/dashboard" 
-                    className="flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg bg-purple-50 text-purple-600" 
+                    className="flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100" 
                     onClick={closeMenu}
                   >
-                    <ShieldCheckIcon className="h-5 w-5" /> Admin
+                    <ShieldCheckIcon className="h-5 w-5" /> 
+                    Administration
                   </Link>
                 </>
               )}
               
               {isLoggedIn ? (
                 <>
-                  {/* ✅ CLOCHE DE NOTIFICATIONS MOBILE */}
+                  {/* Séparateur */}
                   <div className="border-t border-gray-100 my-2"></div>
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-sm font-medium text-gray-600">Notifications</span>
+
+                  {/* Notifications Mobile */}
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-blue-50 rounded-lg mx-1">
+                    <span className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                      <BellIcon className="h-5 w-5" />
+                      Notifications
+                    </span>
                     <NotificationBell />
                   </div>
 
+                  {/* Dashboard */}
                   <Link 
                     href="/dashboard" 
-                    className="flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-600" 
+                    className={`flex items-center gap-3 transition font-medium py-2.5 px-3 rounded-lg ${
+                      pathname.startsWith('/dashboard')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
                     onClick={closeMenu}
                   >
-                    <UserCircleIcon className="h-5 w-5" /> Dashboard
+                    <UserCircleIcon className="h-5 w-5" /> 
+                    Dashboard
                   </Link>
+
+                  {/* Déconnexion */}
                   <button 
                     onClick={() => { handleLogout(); closeMenu(); }} 
                     className="flex items-center gap-3 text-red-600 hover:bg-red-50 transition font-medium py-2.5 px-3 rounded-lg"
                   >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" /> Déconnexion
+                    <ArrowRightOnRectangleIcon className="h-5 w-5" /> 
+                    Déconnexion
                   </button>
                 </>
               ) : (
                 <>
+                  {/* Séparateur */}
                   <div className="border-t border-gray-100 my-2"></div>
+
+                  {/* Bouton Connexion */}
                   <Link 
                     href="/login" 
-                    className="bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition text-center block font-medium" 
+                    className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition text-center block font-medium" 
                     onClick={closeMenu}
                   >
                     Se connecter
