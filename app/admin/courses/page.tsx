@@ -24,7 +24,7 @@ export default function AdminCoursesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   
-  // État pour les IDs de vidéos (stockés en tant que chaîne de caractères séparée par des virgules)
+  // État pour les IDs de vidéos
   const [videoIdsInput, setVideoIdsInput] = useState('');
   
   const [formData, setFormData] = useState({
@@ -85,21 +85,42 @@ export default function AdminCoursesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const userData = await supabase.auth.getUser();
-      
-      // Convertir la chaîne d'IDs en tableau
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Vous devez etre connecte');
+        return;
+      }
+
       const videoIds = videoIdsInput
         .split(',')
         .map(id => id.trim())
         .filter(id => id !== '');
 
+      const cleanSlug = formData.slug
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
       const data = {
-        ...formData,
-        instructor_id: userData.data.user?.id,
+        title: formData.title.trim(),
+        slug: cleanSlug,
+        description: formData.description?.trim() || null,
+        level: formData.level,
+        duration: formData.duration?.trim() || null,
+        program: formData.program?.trim() || null,
+        prerequisites: formData.prerequisites?.trim() || null,
+        price: Number(formData.price) || 0,
+        available_seats: Number(formData.available_seats) || 10,
+        category_id: formData.category_id ? Number(formData.category_id) : null,
+        instructor_id: session.user.id,
+        is_published: Boolean(formData.is_published),
+        youtube_playlist_id: formData.youtube_playlist_id?.trim() || null,
         youtube_video_ids: videoIds,
-        has_videos: formData.has_videos && videoIds.length > 0,
+        has_videos: videoIds.length > 0,
       };
-      
+
       if (editingId) {
         const { error } = await supabase.from('courses').update(data).eq('id', editingId);
         if (error) throw error;
@@ -109,9 +130,10 @@ export default function AdminCoursesPage() {
       }
       resetForm();
       fetchData();
+      alert(editingId ? 'Formation mise a jour !' : 'Formation creee !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement');
+      alert(`Erreur: ${error instanceof Error ? error.message : 'Erreur lors de l\'enregistrement'}`);
     }
   };
 
@@ -133,8 +155,11 @@ export default function AdminCoursesPage() {
       has_videos: course.has_videos || false,
     });
     
-    // Convertir le tableau d'IDs en chaîne séparée par des virgules
-    setVideoIdsInput((course.youtube_video_ids || []).join(', '));
+    if (course.youtube_video_ids && course.youtube_video_ids.length > 0) {
+      setVideoIdsInput(course.youtube_video_ids.join(', '));
+    } else {
+      setVideoIdsInput('');
+    }
     
     setShowForm(true);
   };
@@ -358,9 +383,12 @@ export default function AdminCoursesPage() {
                 />
               </div>
 
-              {/* SECTION YOUTUBE - Utilisant la structure existante */}
               <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
                 <h3 className="text-md font-semibold text-slate-700 mb-3">Videos YouTube</h3>
+                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
+                  Les lecons sont creees automatiquement a partir des IDs de videos YouTube.
+                  Ajoutez au moins une video pour que les etudiants puissent suivre la formation.
+                </p>
               </div>
 
               <div className="md:col-span-2">
@@ -376,17 +404,17 @@ export default function AdminCoursesPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">IDs des videos YouTube</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">IDs des videos YouTube *</label>
                 <textarea
                   value={videoIdsInput}
                   onChange={(e) => setVideoIdsInput(e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  placeholder="dQw4w9WgXcQ, dQw4w9WgXcQ, dQw4w9WgXcQ"
+                  placeholder="inWWhr5tnEA, U-fpEHLIzQE, _-DekqEyAV0"
+                  required
                 />
-                <p className="text-xs text-gray-400 mt-1">Separes par des virgules</p>
+                <p className="text-xs text-gray-400 mt-1">Separes par des virgules. Au moins une video est requise.</p>
                 
-                {/* Aperçu des miniatures */}
                 {videoIdsInput && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {videoIdsInput.split(',').map((id, index) => {
@@ -413,15 +441,6 @@ export default function AdminCoursesPage() {
               </div>
 
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.has_videos}
-                    onChange={(e) => setFormData({ ...formData, has_videos: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  Activer les videos pour cette formation
-                </label>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <input
                     type="checkbox"
@@ -500,7 +519,7 @@ export default function AdminCoursesPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Aucune</span>
+                          <span className="text-xs text-red-400">Aucune video</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{course.price} FCFA</td>

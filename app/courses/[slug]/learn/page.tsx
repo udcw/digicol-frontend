@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
-  ClockIcon,
   AcademicCapIcon,
   PlayIcon,
   ChevronRightIcon,
@@ -94,63 +93,24 @@ export default function CourseLearnPage({ params }: { params: Promise<{ slug: st
       setProgress(enrollmentData.progress || 0);
       console.log('Inscription trouvee, progression:', enrollmentData.progress);
 
-      // Créer les leçons à partir des vidéos YouTube
+      // CREER LES LEÇONS UNIQUEMENT A PARTIR DES VIDEOS YOUTUBE
       let lessonsList: Lesson[] = [];
       
       if (courseData.has_videos && courseData.youtube_video_ids && courseData.youtube_video_ids.length > 0) {
-        // Utiliser les vidéos YouTube de la formation
         lessonsList = courseData.youtube_video_ids.map((videoId: string, index: number) => ({
           id: `lesson-${index + 1}`,
-          title: `Leçon ${index + 1}`,
+          title: `Lecon ${index + 1}`,
           video_id: videoId,
           duration: '10 min',
           order: index,
           is_completed: false,
         }));
+        console.log(`${lessonsList.length} lecons creees a partir des videos YouTube`);
       } else {
-        // Leçons par défaut (fallback)
-        lessonsList = [
-          {
-            id: 'lesson-1',
-            title: 'Introduction',
-            video_id: 'dQw4w9WgXcQ',
-            duration: '8 min',
-            order: 0,
-            is_completed: false,
-          },
-          {
-            id: 'lesson-2',
-            title: 'Module 1',
-            video_id: 'dQw4w9WgXcQ',
-            duration: '12 min',
-            order: 1,
-            is_completed: false,
-          },
-          {
-            id: 'lesson-3',
-            title: 'Module 2',
-            video_id: 'dQw4w9WgXcQ',
-            duration: '15 min',
-            order: 2,
-            is_completed: false,
-          },
-          {
-            id: 'lesson-4',
-            title: 'Module 3',
-            video_id: 'dQw4w9WgXcQ',
-            duration: '10 min',
-            order: 3,
-            is_completed: false,
-          },
-          {
-            id: 'lesson-5',
-            title: 'Conclusion',
-            video_id: 'dQw4w9WgXcQ',
-            duration: '20 min',
-            order: 4,
-            is_completed: false,
-          },
-        ];
+        console.warn('Aucune video YouTube trouvee pour cette formation');
+        setLessons([]);
+        setLoading(false);
+        return;
       }
 
       setLessons(lessonsList);
@@ -168,7 +128,7 @@ export default function CourseLearnPage({ params }: { params: Promise<{ slug: st
           ...l,
           is_completed: completed.includes(l.id),
         })));
-        console.log('Leçons completées:', completed.length);
+        console.log('Lecons completées:', completed.length);
       }
 
     } catch (error) {
@@ -265,6 +225,25 @@ export default function CourseLearnPage({ params }: { params: Promise<{ slug: st
     );
   }
 
+  if (lessons.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <PlayIcon className="h-10 w-10 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Aucune video disponible</h2>
+          <p className="text-gray-500 mb-6">
+            Cette formation ne contient pas encore de videos. Revenez plus tard.
+          </p>
+          <Link href={`/courses/${slug}`} className="text-blue-600 hover:underline">
+            Retour a la formation
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const currentLesson = lessons[currentLessonIndex] || null;
 
   return (
@@ -301,7 +280,7 @@ export default function CourseLearnPage({ params }: { params: Promise<{ slug: st
               {currentLesson ? (
                 <div className="aspect-video bg-black">
                   <iframe
-                    src={`https://www.youtube.com/embed/${currentLesson.video_id || 'dQw4w9WgXcQ'}?autoplay=0&rel=0`}
+                    src={`https://www.youtube.com/embed/${currentLesson.video_id}?autoplay=0&rel=0`}
                     title={currentLesson.title}
                     className="w-full h-full"
                     allowFullScreen

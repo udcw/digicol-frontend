@@ -20,6 +20,11 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   WalletIcon,
+  TrophyIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminDashboardPage() {
@@ -163,47 +168,173 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-sm text-gray-500 mt-4">Chargement du tableau de bord...</p>
+        </div>
       </div>
     );
   }
 
   const statItems = [
-    { label: 'Total Utilisateurs', value: stats.users, icon: UsersIcon, color: 'blue' },
-    { label: 'Membres', value: stats.members, icon: UserGroupIcon, color: 'green' },
-    { label: 'Administrateurs', value: stats.admins, icon: UsersIcon, color: 'purple' },
-    { label: 'Formations', value: stats.courses, icon: BookOpenIcon, color: 'indigo' },
-    { label: 'Projets', value: stats.projects, icon: RocketLaunchIcon, color: 'orange' },
-    { label: 'Certificats', value: stats.certificates, icon: DocumentTextIcon, color: 'yellow' },
-    { label: 'Événements', value: stats.events, icon: CalendarIcon, color: 'red' },
-    { label: 'Opportunités', value: stats.opportunities, icon: BriefcaseIcon, color: 'pink' },
+    {
+      label: 'Utilisateurs',
+      value: stats.users,
+      icon: UsersIcon,
+      color: 'blue',
+      href: '/admin/members',
+    },
+    {
+      label: 'Membres',
+      value: stats.members,
+      icon: UserGroupIcon,
+      color: 'green',
+      href: '/admin/members',
+    },
+    {
+      label: 'Administrateurs',
+      value: stats.admins,
+      icon: ShieldCheckIcon,
+      color: 'purple',
+      href: '/admin/members',
+    },
+    {
+      label: 'Formations',
+      value: stats.courses,
+      icon: BookOpenIcon,
+      color: 'indigo',
+      href: '/admin/courses',
+    },
+    {
+      label: 'Projets',
+      value: stats.projects,
+      icon: RocketLaunchIcon,
+      color: 'orange',
+      href: '/admin/projects',
+    },
+    {
+      label: 'Certificats',
+      value: stats.certificates,
+      icon: DocumentTextIcon,
+      color: 'yellow',
+      href: '/admin/certificates',
+    },
+    {
+      label: 'Événements',
+      value: stats.events,
+      icon: CalendarIcon,
+      color: 'red',
+      href: '/admin/events',
+    },
+    {
+      label: 'Opportunités',
+      value: stats.opportunities,
+      icon: BriefcaseIcon,
+      color: 'pink',
+      href: '/admin/opportunities',
+    },
   ];
 
   const menuItems = [
-    { href: '/admin/members', label: 'Membres', icon: UsersIcon, description: 'Gérer les utilisateurs' },
-    { href: '/admin/courses', label: 'Formations', icon: BookOpenIcon, description: 'Gérer les cours' },
-    { href: '/admin/projects', label: 'Projets', icon: RocketLaunchIcon, description: 'Gérer les projets' },
-    { href: '/admin/events', label: 'Événements', icon: CalendarIcon, description: 'Gérer les événements' },
-    { href: '/admin/opportunities', label: 'Opportunités', icon: BriefcaseIcon, description: 'Gérer les offres' },
-    { href: '/admin/blog', label: 'Blog', icon: NewspaperIcon, description: 'Gérer les articles' },
-    { href: '/admin/certificates', label: 'Certificats', icon: DocumentTextIcon, description: 'Gérer les certificats' },
-    { href: '/admin/wallets', label: 'Portefeuilles', icon: WalletIcon, description: 'Gérer les portefeuilles' }, // ✅ AJOUTÉ
-    { href: '/admin/statistics', label: 'Statistiques', icon: ChartBarIcon, description: 'Voir les statistiques' },
+    {
+      href: '/admin/members',
+      label: 'Membres',
+      icon: UsersIcon,
+      description: 'Gérer les utilisateurs',
+      color: 'blue',
+    },
+    {
+      href: '/admin/courses',
+      label: 'Formations',
+      icon: BookOpenIcon,
+      description: 'Gérer les cours',
+      color: 'indigo',
+    },
+    {
+      href: '/admin/projects',
+      label: 'Projets',
+      icon: RocketLaunchIcon,
+      description: 'Gérer les projets',
+      color: 'orange',
+    },
+    {
+      href: '/admin/events',
+      label: 'Événements',
+      icon: CalendarIcon,
+      description: 'Gérer les événements',
+      color: 'red',
+    },
+    {
+      href: '/admin/opportunities',
+      label: 'Opportunités',
+      icon: BriefcaseIcon,
+      description: 'Gérer les offres',
+      color: 'pink',
+    },
+    {
+      href: '/admin/blog',
+      label: 'Blog',
+      icon: NewspaperIcon,
+      description: 'Gérer les articles',
+      color: 'green',
+    },
+    {
+      href: '/admin/certificates',
+      label: 'Certificats',
+      icon: DocumentTextIcon,
+      description: 'Gérer les certificats',
+      color: 'yellow',
+    },
+    {
+      href: '/admin/community',
+      label: 'Communauté',
+      icon: UserGroupIcon,
+      description: 'Modérer la communauté',
+      color: 'teal',
+    },
+    {
+      href: '/admin/badges',
+      label: 'Badges',
+      icon: TrophyIcon,
+      description: 'Gérer les badges',
+      color: 'amber',
+    },
+    {
+      href: '/admin/wallets',
+      label: 'Portefeuilles',
+      icon: WalletIcon,
+      description: 'Gérer les portefeuilles',
+      color: 'emerald',
+    },
+    {
+      href: '/admin/statistics',
+      label: 'Statistiques',
+      icon: ChartBarIcon,
+      description: 'Voir les statistiques',
+      color: 'violet',
+    },
   ];
 
-  const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
-    orange: 'bg-orange-50 text-orange-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    red: 'bg-red-50 text-red-600',
-    pink: 'bg-pink-50 text-pink-600',
+  const colorMap: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
+    blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', gradient: 'from-blue-500 to-blue-600' },
+    green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100', gradient: 'from-green-500 to-green-600' },
+    purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', gradient: 'from-purple-500 to-purple-600' },
+    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', gradient: 'from-indigo-500 to-indigo-600' },
+    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', gradient: 'from-orange-500 to-orange-600' },
+    yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-100', gradient: 'from-yellow-500 to-yellow-600' },
+    red: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-100', gradient: 'from-red-500 to-red-600' },
+    pink: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-100', gradient: 'from-pink-500 to-pink-600' },
+    teal: { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-100', gradient: 'from-teal-500 to-teal-600' },
+    amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', gradient: 'from-amber-500 to-amber-600' },
+    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', gradient: 'from-emerald-500 to-emerald-600' },
+    violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-100', gradient: 'from-violet-500 to-violet-600' },
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
+      {/* ============================================ */}
+      {/* HEADER */}
+      {/* ============================================ */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
@@ -212,155 +343,357 @@ export default function AdminDashboardPage() {
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600 hidden sm:inline">{user?.email || 'Admin'}</span>
-            <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition">
-              <ArrowRightOnRectangleIcon className="h-4 w-4" /> Déconnexion
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition font-medium"
+            >
+              <ArrowRightOnRectangleIcon className="h-4 w-4" />
+              Déconnexion
             </button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Tableau de bord</h1>
-            <p className="text-sm text-gray-500 mt-1">Vue d'ensemble de la plateforme DigiCol</p>
+      <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+        {/* ============================================ */}
+        {/* BANNIÈRE DE BIENVENUE */}
+        {/* ============================================ */}
+        <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-2xl p-6 md:p-8 mb-6 overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full blur-3xl"></div>
           </div>
-          <div className="flex gap-2">
-            <Link href="/admin/events/new" className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm font-medium">
-              + Nouvel événement
-            </Link>
-            <Link href="/admin/courses/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-              + Nouvelle formation
-            </Link>
-          </div>
-        </div>
 
-        {/* Statistiques */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-          {statItems.map((stat, index) => {
-            const Icon = stat.icon;
-            const colorClass = colorClasses[stat.color] || 'bg-blue-50 text-blue-600';
-            return (
-              <div key={index} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-lg ${colorClass}`}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className="text-xl font-bold text-slate-800">{stat.value}</span>
-                </div>
-                <p className="text-xs text-gray-500">{stat.label}</p>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-xs font-medium mb-3 border border-purple-500/30">
+                <ShieldCheckIcon className="h-3 w-3" />
+                Panneau d'Administration
               </div>
-            );
-          })}
-        </div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+                Tableau de bord
+              </h1>
+              <p className="text-sm text-gray-300">
+                Vue d'ensemble de la plateforme DigiCol
+              </p>
+            </div>
 
-        {/* Menu Admin */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {menuItems.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <Link key={index} href={item.href} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-300 group transition">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition">
-                    <Icon className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-bold text-slate-800">{item.label}</h2>
-                </div>
-                <p className="text-sm text-gray-500">{item.description}</p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/admin/events/new"
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg border border-white/20 transition text-sm font-medium backdrop-blur-sm"
+              >
+                <CalendarIcon className="h-4 w-4" />
+                Nouvel événement
               </Link>
-            );
-          })}
+              <Link
+                href="/admin/courses/new"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium shadow-lg shadow-blue-600/30"
+              >
+                <BookOpenIcon className="h-4 w-4" />
+                Nouvelle formation
+              </Link>
+            </div>
+          </div>
         </div>
 
-        {/* Données récentes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Derniers cours */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <AcademicCapIcon className="h-5 w-5 text-blue-600" />
-              Dernières formations
-            </h3>
-            {recentCourses.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucune formation ajoutée</p>
-            ) : (
-              <div className="space-y-3">
-                {recentCourses.map((course) => (
-                  <Link key={course.id} href={`/admin/courses/${course.id}`} className="block hover:bg-gray-50 p-2 rounded-lg transition">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-slate-800 text-sm">{course.title}</p>
-                        <p className="text-xs text-gray-500">{course.level} • {course.price} FCFA</p>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(course.created_at).toLocaleDateString('fr-FR')}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            <Link href="/admin/courses" className="text-sm text-blue-600 hover:text-blue-700 mt-4 inline-block">
-              Voir toutes les formations →
+        {/* ============================================ */}
+        {/* STATISTIQUES */}
+        {/* ============================================ */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+              <ChartBarIcon className="h-5 w-5 text-blue-600" />
+              Vue d'ensemble
+            </h2>
+            <Link
+              href="/admin/statistics"
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              Voir les statistiques
+              <ArrowRightIcon className="h-3 w-3" />
             </Link>
           </div>
 
-          {/* Derniers événements */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-purple-600" />
-              Derniers événements
-            </h3>
-            {recentEvents.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucun événement ajouté</p>
-            ) : (
-              <div className="space-y-3">
-                {recentEvents.map((event) => (
-                  <Link key={event.id} href={`/admin/events/${event.id}`} className="block hover:bg-gray-50 p-2 rounded-lg transition">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-slate-800 text-sm">{event.title}</p>
-                        <p className="text-xs text-gray-500">{event.event_type} • {event.is_published ? 'Publié' : 'Brouillon'}</p>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(event.start_date).toLocaleDateString('fr-FR')}
-                      </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+            {statItems.map((stat, index) => {
+              const Icon = stat.icon;
+              const colors = colorMap[stat.color] || colorMap.blue;
+              return (
+                <Link
+                  key={index}
+                  href={stat.href}
+                  className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2.5 ${colors.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                      <Icon className={`h-5 w-5 ${colors.text}`} />
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            <Link href="/admin/events" className="text-sm text-purple-600 hover:text-purple-700 mt-4 inline-block">
-              Voir tous les événements →
-            </Link>
+                    <ArrowRightIcon className="h-4 w-4 text-gray-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">{stat.label}</p>
+                </Link>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Derniers utilisateurs */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <UsersIcon className="h-5 w-5 text-blue-600" />
-              Derniers membres
-            </h3>
-            {recentUsers.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucun utilisateur inscrit</p>
-            ) : (
-              <div className="space-y-3">
-                {recentUsers.map((user) => (
-                  <Link key={user.id} href={`/admin/members/${user.id}`} className="block hover:bg-gray-50 p-2 rounded-lg transition">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-slate-800 text-sm">{user.email}</p>
-                        <p className="text-xs text-gray-500">{user.username || 'N/A'} • {user.role}</p>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                      </span>
+        {/* ============================================ */}
+        {/* MENU D'ADMINISTRATION */}
+        {/* ============================================ */}
+        <div className="mb-8">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
+            <SparklesIcon className="h-5 w-5 text-blue-600" />
+            Gestion de la plateforme
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {menuItems.map((item, index) => {
+              const Icon = item.icon;
+              const colors = colorMap[item.color] || colorMap.blue;
+              return (
+                <Link
+                  key={index}
+                  href={item.href}
+                  className="group bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 ${colors.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                      <Icon className={`h-6 w-6 ${colors.text}`} />
                     </div>
-                  </Link>
-                ))}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-900 mb-0.5">{item.label}</h3>
+                      <p className="text-xs text-gray-500">{item.description}</p>
+                    </div>
+                    <ArrowRightIcon className="h-5 w-5 text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* DONNÉES RÉCENTES */}
+        {/* ============================================ */}
+        <div className="mb-6">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
+            <ArrowTrendingUpIcon className="h-5 w-5 text-blue-600" />
+            Activité récente
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Derniers cours */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                  <div className="p-1.5 bg-indigo-50 rounded-lg">
+                    <AcademicCapIcon className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  Dernières formations
+                </h3>
+                <Link
+                  href="/admin/courses"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Voir tout
+                </Link>
               </div>
-            )}
-            <Link href="/admin/members" className="text-sm text-blue-600 hover:text-blue-700 mt-4 inline-block">
-              Voir tous les membres →
+
+              {recentCourses.length === 0 ? (
+                <div className="p-6 text-center">
+                  <BookOpenIcon className="h-10 w-10 mx-auto text-gray-200 mb-2" />
+                  <p className="text-sm text-gray-400">Aucune formation</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {recentCourses.map((course) => (
+                    <Link
+                      key={course.id}
+                      href={`/admin/courses/${course.id}`}
+                      className="block p-3 hover:bg-gray-50 transition group"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-800 text-sm line-clamp-1 group-hover:text-blue-600 transition">
+                            {course.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {course.level}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {course.price} FCFA
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                          {new Date(course.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Derniers événements */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                  <div className="p-1.5 bg-red-50 rounded-lg">
+                    <CalendarIcon className="h-4 w-4 text-red-600" />
+                  </div>
+                  Derniers événements
+                </h3>
+                <Link
+                  href="/admin/events"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Voir tout
+                </Link>
+              </div>
+
+              {recentEvents.length === 0 ? (
+                <div className="p-6 text-center">
+                  <CalendarIcon className="h-10 w-10 mx-auto text-gray-200 mb-2" />
+                  <p className="text-sm text-gray-400">Aucun événement</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {recentEvents.map((event) => (
+                    <Link
+                      key={event.id}
+                      href={`/admin/events/${event.id}`}
+                      className="block p-3 hover:bg-gray-50 transition group"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-800 text-sm line-clamp-1 group-hover:text-blue-600 transition">
+                            {event.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {event.event_type}
+                            </span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                              event.is_published
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {event.is_published ? 'Publié' : 'Brouillon'}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                          {new Date(event.start_date).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Derniers utilisateurs */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                  <div className="p-1.5 bg-blue-50 rounded-lg">
+                    <UsersIcon className="h-4 w-4 text-blue-600" />
+                  </div>
+                  Derniers membres
+                </h3>
+                <Link
+                  href="/admin/members"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Voir tout
+                </Link>
+              </div>
+
+              {recentUsers.length === 0 ? (
+                <div className="p-6 text-center">
+                  <UsersIcon className="h-10 w-10 mx-auto text-gray-200 mb-2" />
+                  <p className="text-sm text-gray-400">Aucun utilisateur</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {recentUsers.map((user) => (
+                    <Link
+                      key={user.id}
+                      href={`/admin/members/${user.id}`}
+                      className="block p-3 hover:bg-gray-50 transition group"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {user.username?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-800 text-sm line-clamp-1 group-hover:text-blue-600 transition">
+                              {user.email}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : user.role === 'INSTRUCTOR'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {user.role}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                          {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* CTA FINAL */}
+        {/* ============================================ */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white text-center">
+          <SparklesIcon className="h-8 w-8 mx-auto mb-3 text-blue-200" />
+          <h2 className="text-lg md:text-xl font-bold mb-2">
+            DigiCol Administration
+          </h2>
+          <p className="text-blue-100 text-sm max-w-xl mx-auto mb-4">
+            Gérez l'ensemble de la plateforme depuis ce panneau central.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href="/admin/statistics"
+              className="inline-flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 px-5 py-2 rounded-lg font-medium transition text-sm"
+            >
+              <ChartBarIcon className="h-4 w-4" />
+              Voir les statistiques
+            </Link>
+            <Link
+              href="/"
+              target="_blank"
+              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-lg font-medium border border-white/20 transition text-sm"
+            >
+              Voir le site public
             </Link>
           </div>
         </div>
